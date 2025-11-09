@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>OnPrompted — One box. Your idea. We handle the rest.</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="top">
+    <div class="logo"><span class="dot"></span> OnPrompted</div>
+    <div class="badge">MVP • Front-end only</div>
+  </header>
+
+  <main class="hero">
+    <h1>One box. Your idea. We handle the rest.</h1>
+    <p class="sub">
+      Type your idea in plain English. We’ll figure out the domain (code, content, video, advice)
+      and only ask what’s necessary—then craft the perfect prompt.
+    </p>
+
+    <div class="input-wrap">
+      <textarea id="idea" placeholder="Describe what you want…"></textarea>
+      <button id="begin" class="btn">Begin</button>
+    </div>
+
+    <div class="chips" id="chips">
+      <button class="chip" data-example="Turn my 60s product footage into a 15s TikTok with 3 quick cuts.">Video short from long clip</button>
+      <button class="chip" data-example="Refactor my React Native cart to remove a dependency and keep styles the same.">Refactor RN cart</button>
+      <button class="chip" data-example="I need a 7-day study plan for orgo, 2h/day, aiming for a B+.">Study plan in 7 days</button>
+    </div>
+
+    <section class="panel">
+      <h3>Preview (no backend yet)</h3>
+      <div id="chat" class="chat">
+        <div class="bubble ai">Hi! Paste your idea and hit <strong>Begin</strong>. (This is a front-end demo only.)</div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <span>© <span id="year"></span> OnPrompted</span>
+    <a href="#" class="link">Privacy • Terms</a>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
