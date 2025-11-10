@@ -288,8 +288,7 @@ If the request IS already fully clear, specific, and well-scoped:
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: userMessage },
       ],
-      // CHANGED per API error: use text.format instead of response_format
-      text: { format: 'json' },
+      // removed text.format / response_format per API errors
     });
 
     const raw = response.output[0].content[0].text || '{}';
