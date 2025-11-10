@@ -1,4 +1,4 @@
-// promptEngineRouter.js
+// promptEngineRouter.js 
 import express from 'express';
 import OpenAI from 'openai';
 
@@ -62,6 +62,9 @@ The final_prompt MUST:
     with the requested output on the first try, WITHOUT asking the user more questions.
   - If any detail is still missing, infer a reasonable default and clearly mark it as an assumption
     INSIDE the final_prompt (instead of delegating clarification to the target model).
+  - Before finalizing the optimized prompt, identify any non-trivial assumptions you made.
+  - At the start of the final_prompt, include a short "Assumptions" section listing these assumptions
+    in a clear, concise way so the user can see how their request was interpreted.
 - Respond ONLY with JSON:
   {
     "status": "ready",
@@ -224,6 +227,9 @@ When you are in MODE 2 and producing the final optimized prompt, it should conce
 
 "You are [ROLE].
 Context: [who, what, where, constraints, assumptions].
+Assumptions:
+- [Brief bullet list of any inferred or resolved assumptions based on the user's request.]
+
 Task: [clear, specific instructions].
 Requirements:
 - [format / structure]
@@ -250,7 +256,6 @@ FORMAT REQUIREMENTS (CRITICAL)
 - No markdown, no extra keys, no extra prose.
 `;
 
-// POST /api/engineer-prompt
 router.post('/engineer-prompt', async (req, res) => {
   try {
     const { goal, category, extraContext, clarificationAnswers } = req.body || {};
