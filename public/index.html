@@ -52,6 +52,11 @@
         <button id="authSignupBtn" class="auth-btn primary">Create account</button>
         <button id="authLoginBtn" class="auth-btn ghost">Sign in</button>
       </div>
+      <div class="auth-actions">
+        <button id="authGoogleBtn" class="auth-btn">
+          Continue with Google
+        </button>
+      </div>
 
       <button id="authCloseBtn" class="auth-close">×</button>
 
@@ -228,6 +233,21 @@
         Free to use while we refine with real prompts. Simple plans coming soon.
       </p>
     </section>
+    
+    <!-- ACCOUNT & HISTORY SIDEBAR (populated when logged in) -->
+    <aside id="accountSidebar" class="account-sidebar" style="display:none;">
+      <div class="account-sidebar-header">
+        <div class="account-sidebar-label">Account</div>
+        <div id="accountSidebarEmail" class="account-sidebar-email"></div>
+      </div>
+      <div class="account-sidebar-section">
+        <div class="account-sidebar-label">Recent optimized prompts</div>
+        <ul id="accountSidebarPrompts" class="account-sidebar-list">
+          <!-- Filled via app.js -->
+        </ul>
+      </div>
+    </aside>
+
   </main>
 
   <footer class="foot">

@@ -3,7 +3,7 @@ const beginBtn = document.getElementById('begin');
 const chat = document.getElementById('chat');
 const copyBtn = document.getElementById('copyPrompt');
 
-// Auth elements (added)
+// Auth elements
 const loginOpenBtn = document.getElementById('loginOpenBtn');
 const logoutBtn = document.getElementById('logoutBtn');
 const authModal = document.getElementById('authModal');
@@ -12,9 +12,16 @@ const authEmail = document.getElementById('authEmail');
 const authPassword = document.getElementById('authPassword');
 const authLoginBtn = document.getElementById('authLoginBtn');
 const authSignupBtn = document.getElementById('authSignupBtn');
+const authGoogleBtn = document.getElementById('authGoogleBtn');
 const userEmailEl = document.getElementById('userEmail');
 
+// Account sidebar elements
+const accountSidebar = document.getElementById('accountSidebar');
+const accountSidebarEmail = document.getElementById('accountSidebarEmail');
+const accountSidebarPrompts = document.getElementById('accountSidebarPrompts');
+
 let currentUser = null;
+let currentIdToken = null; // will be sent to /api/engineer-prompt
 
 document.getElementById('year').textContent = new Date().getFullYear();
 
@@ -40,7 +47,7 @@ function escapeHtml(s) {
   ));
 }
 
-// --- Auth modal helpers (added) ---
+// --- Auth modal helpers ---
 function openAuthModal() {
   if (!authModal) return;
   authModal.style.display = 'flex';
@@ -54,7 +61,7 @@ function closeAuthModal() {
   authModal.style.display = 'none';
 }
 
-// --- Attach auth modal events (added) ---
+// Attach auth modal events
 if (loginOpenBtn) {
   loginOpenBtn.addEventListener('click', openAuthModal);
 }
@@ -67,12 +74,12 @@ if (authModal) {
   });
 }
 
-// --- Auth helpers (added) ---
+// --- Auth helpers ---
 function showError(message) {
   alert(message);
 }
 
-// Create account (added)
+// Email/password signup
 if (authSignupBtn) {
   authSignupBtn.addEventListener('click', async () => {
     const email = authEmail.value.trim();
@@ -90,7 +97,7 @@ if (authSignupBtn) {
   });
 }
 
-// Login (added)
+// Email/password login
 if (authLoginBtn) {
   authLoginBtn.addEventListener('click', async () => {
     const email = authEmail.value.trim();
@@ -108,7 +115,20 @@ if (authLoginBtn) {
   });
 }
 
-// Logout (added)
+// Google login (new)
+if (authGoogleBtn) {
+  authGoogleBtn.addEventListener('click', async () => {
+    try {
+      await window.firebaseAuth.signInWithPopup(window.firebaseGoogleProvider);
+      closeAuthModal();
+    } catch (err) {
+      console.error(err);
+      showError(err.message || 'Google sign-in failed.');
+    }
+  });
+}
+
+// Logout
 if (logoutBtn) {
   logoutBtn.addEventListener('click', async () => {
     try {
@@ -120,7 +140,7 @@ if (logoutBtn) {
   });
 }
 
-// --- Prompt history save/load (added) ---
+// --- Prompt history save/load ---
 async function savePromptToHistory({ goal, clarificationAnswers = null, finalPrompt }) {
   try {
     if (!currentUser || !window.firebaseDb) return;
@@ -141,6 +161,27 @@ async function savePromptToHistory({ goal, clarificationAnswers = null, finalPro
   }
 }
 
+function renderSidebarHistory(docs) {
+  if (!accountSidebar || !accountSidebarPrompts || !accountSidebarEmail) return;
+  if (!currentUser) {
+    accountSidebar.style.display = 'none';
+    return;
+  }
+
+  accountSidebarEmail.textContent = currentUser.email || '';
+  accountSidebarPrompts.innerHTML = '';
+
+  docs.slice(-6).forEach((item) => {
+    if (!item.finalPrompt) return;
+    const li = document.createElement('li');
+    const preview = item.goal || item.finalPrompt;
+    li.textContent = preview.trim().slice(0, 220);
+    accountSidebarPrompts.appendChild(li);
+  });
+
+  accountSidebar.style.display = docs.length ? 'flex' : 'flex';
+}
+
 async function loadPromptHistory() {
   if (!currentUser || !window.firebaseDb) return;
   try {
@@ -152,28 +193,37 @@ async function loadPromptHistory() {
       .limit(10);
 
     const snap = await ref.get();
-    if (snap.empty) return;
+    if (snap.empty) {
+      if (accountSidebar) accountSidebar.style.display = 'flex'; // still show account info
+      return;
+    }
 
     const docs = [];
     snap.forEach((d) => docs.push({ id: d.id, ...d.data() }));
     docs.reverse(); // oldest first
 
+    // Append history into chat (memory)
     docs.forEach((item) => {
       if (item.goal) {
         addBubble(`<strong>You (past):</strong> ${escapeHtml(item.goal)}`, 'user');
       }
-      addBubble(
-        `<div><strong>Optimized Prompt (saved):</strong></div>
-         <pre class="prompt-block">${escapeHtml(item.finalPrompt || '')}</pre>`,
-        'ai'
-      );
+      if (item.finalPrompt) {
+        addBubble(
+          `<div><strong>Optimized Prompt (saved):</strong></div>
+           <pre class="prompt-block">${escapeHtml(item.finalPrompt || '')}</pre>`,
+          'ai'
+        );
+      }
     });
+
+    // Render sidebar summary
+    renderSidebarHistory(docs);
   } catch (err) {
     console.error('Error loading history:', err);
   }
 }
 
-// --- Auth state listener (added) ---
+// --- Track auth & ID token ---
 window.firebaseAuth.onAuthStateChanged(async (user) => {
   currentUser = user || null;
 
@@ -185,6 +235,14 @@ window.firebaseAuth.onAuthStateChanged(async (user) => {
     if (loginOpenBtn) loginOpenBtn.style.display = 'none';
     if (logoutBtn) logoutBtn.style.display = 'inline-block';
 
+    // Get initial ID token
+    try {
+      currentIdToken = await currentUser.getIdToken();
+    } catch (e) {
+      console.error('Error getting ID token:', e);
+      currentIdToken = null;
+    }
+
     await loadPromptHistory();
   } else {
     if (userEmailEl) {
@@ -194,7 +252,24 @@ window.firebaseAuth.onAuthStateChanged(async (user) => {
     if (loginOpenBtn) loginOpenBtn.style.display = 'inline-block';
     if (logoutBtn) logoutBtn.style.display = 'none';
 
+    currentIdToken = null;
+    if (accountSidebar) accountSidebar.style.display = 'none';
+
     console.log('No user logged in');
+  }
+});
+
+// Keep ID token fresh
+window.firebaseAuth.onIdTokenChanged(async (user) => {
+  if (!user) {
+    currentIdToken = null;
+    return;
+  }
+  try {
+    currentIdToken = await user.getIdToken();
+  } catch (e) {
+    console.error('Error refreshing ID token:', e);
+    currentIdToken = null;
   }
 });
 
@@ -237,7 +312,10 @@ beginBtn.addEventListener('click', async () => {
     try {
       const res = await fetch('/api/engineer-prompt', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(currentIdToken ? { 'Authorization': `Bearer ${currentIdToken}` } : {})
+        },
         body: JSON.stringify({
           goal: pendingGoal,
           clarificationAnswers,
@@ -263,7 +341,7 @@ beginBtn.addEventListener('click', async () => {
         <pre class="prompt-block">${escapeHtml(data.final_prompt)}</pre>
       `;
 
-      // Save to history if logged in (added)
+      // Save to history if logged in
       savePromptToHistory({
         goal: pendingGoal,
         clarificationAnswers,
@@ -295,7 +373,10 @@ beginBtn.addEventListener('click', async () => {
   try {
     const res = await fetch('/api/engineer-prompt', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(currentIdToken ? { 'Authorization': `Bearer ${currentIdToken}` } : {})
+      },
       body: JSON.stringify({ goal }),
     });
 
@@ -334,7 +415,7 @@ beginBtn.addEventListener('click', async () => {
         <pre class="prompt-block">${escapeHtml(data.final_prompt)}</pre>
       `;
 
-      // Save to history if logged in (added)
+      // Save to history if logged in
       savePromptToHistory({
         goal,
         finalPrompt: data.final_prompt,
@@ -357,14 +438,12 @@ beginBtn.addEventListener('click', async () => {
 if (copyBtn) {
   copyBtn.addEventListener('click', async () => {
     try {
-      // Prefer the last explicit optimized prompt block
       const lastPromptBlock = chat.querySelector('.prompt-block:last-of-type');
 
       let textToCopy = '';
       if (lastPromptBlock) {
         textToCopy = lastPromptBlock.textContent.trim();
       } else {
-        // Fallback: last AI bubble
         const aiBubbles = chat.querySelectorAll('.bubble.ai');
         const lastAi = aiBubbles[aiBubbles.length - 1];
         if (lastAi) {
@@ -389,12 +468,15 @@ if (copyBtn) {
   });
 }
 
-// Optional: echo test (kept for sanity)
+// Optional: echo test (still fine; now includes token if present)
 (async function pingEcho() {
   try {
     const res = await fetch('/api/echo', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(currentIdToken ? { 'Authorization': `Bearer ${currentIdToken}` } : {})
+      },
       body: JSON.stringify({ text: 'hello from browser' }),
     });
     console.log('echo:', await res.json());

@@ -18,3 +18,4 @@ const app = initializeApp(firebaseConfig);
 
 window.firebaseAuth = firebase.auth();
 window.firebaseDb = firebase.firestore();
+window.firebaseGoogleProvider = new firebase.auth.GoogleAuthProvider();
