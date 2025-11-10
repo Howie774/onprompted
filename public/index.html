@@ -22,7 +22,44 @@
         Pricing <span class="soon-pill">Soon</span>
       </a>
     </nav>
+    <!-- Auth controls (added) -->
+    <div class="auth-controls">
+      <span id="userEmail" class="auth-user" style="display:none;"></span>
+      <button id="loginOpenBtn" class="auth-btn">Sign in</button>
+      <button id="logoutBtn" class="auth-btn" style="display:none;">Log out</button>
+    </div>
   </header>
+
+  <!-- Auth Modal (added) -->
+  <div id="authModal" class="auth-modal-backdrop" style="display:none;">
+    <div class="auth-modal">
+      <h2 class="auth-title">Sign in to save your prompts</h2>
+      <p class="auth-subtitle">
+        Create a free account to save your prompt history and pick up where you left off.
+      </p>
+
+      <label class="auth-label">
+        Email
+        <input id="authEmail" type="email" class="auth-input" autocomplete="email" />
+      </label>
+
+      <label class="auth-label">
+        Password
+        <input id="authPassword" type="password" class="auth-input" autocomplete="current-password" />
+      </label>
+
+      <div class="auth-actions">
+        <button id="authSignupBtn" class="auth-btn primary">Create account</button>
+        <button id="authLoginBtn" class="auth-btn ghost">Sign in</button>
+      </div>
+
+      <button id="authCloseBtn" class="auth-close">×</button>
+
+      <p class="auth-note">
+        We use your account only to store your prompts securely. No sharing, no spam.
+      </p>
+    </div>
+  </div>
 
   <main>
     <!-- HERO SECTION -->
@@ -202,6 +239,15 @@
     </nav>
   </footer>
 
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+  <!-- Your Firebase initialization -->
+  <script src="firebase-init.js"></script>
+
+  <!-- Your existing logic -->
   <script src="app.js"></script>
 </body>
 </html>

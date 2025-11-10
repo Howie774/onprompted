@@ -3,6 +3,19 @@ const beginBtn = document.getElementById('begin');
 const chat = document.getElementById('chat');
 const copyBtn = document.getElementById('copyPrompt');
 
+// Auth elements (added)
+const loginOpenBtn = document.getElementById('loginOpenBtn');
+const logoutBtn = document.getElementById('logoutBtn');
+const authModal = document.getElementById('authModal');
+const authCloseBtn = document.getElementById('authCloseBtn');
+const authEmail = document.getElementById('authEmail');
+const authPassword = document.getElementById('authPassword');
+const authLoginBtn = document.getElementById('authLoginBtn');
+const authSignupBtn = document.getElementById('authSignupBtn');
+const userEmailEl = document.getElementById('userEmail');
+
+let currentUser = null;
+
 document.getElementById('year').textContent = new Date().getFullYear();
 
 document.getElementById('chips').addEventListener('click', (e) => {
@@ -26,6 +39,164 @@ function escapeHtml(s) {
     { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
   ));
 }
+
+// --- Auth modal helpers (added) ---
+function openAuthModal() {
+  if (!authModal) return;
+  authModal.style.display = 'flex';
+  if (authEmail) authEmail.value = '';
+  if (authPassword) authPassword.value = '';
+  if (authEmail) authEmail.focus();
+}
+
+function closeAuthModal() {
+  if (!authModal) return;
+  authModal.style.display = 'none';
+}
+
+// --- Attach auth modal events (added) ---
+if (loginOpenBtn) {
+  loginOpenBtn.addEventListener('click', openAuthModal);
+}
+if (authCloseBtn) {
+  authCloseBtn.addEventListener('click', closeAuthModal);
+}
+if (authModal) {
+  authModal.addEventListener('click', (e) => {
+    if (e.target === authModal) closeAuthModal();
+  });
+}
+
+// --- Auth helpers (added) ---
+function showError(message) {
+  alert(message);
+}
+
+// Create account (added)
+if (authSignupBtn) {
+  authSignupBtn.addEventListener('click', async () => {
+    const email = authEmail.value.trim();
+    const pass = authPassword.value.trim();
+    if (!email || !pass) return showError('Enter email and password.');
+
+    try {
+      const cred = await window.firebaseAuth.createUserWithEmailAndPassword(email, pass);
+      console.log('Signed up:', cred.user.uid);
+      closeAuthModal();
+    } catch (err) {
+      console.error(err);
+      showError(err.message || 'Could not create account.');
+    }
+  });
+}
+
+// Login (added)
+if (authLoginBtn) {
+  authLoginBtn.addEventListener('click', async () => {
+    const email = authEmail.value.trim();
+    const pass = authPassword.value.trim();
+    if (!email || !pass) return showError('Enter email and password.');
+
+    try {
+      const cred = await window.firebaseAuth.signInWithEmailAndPassword(email, pass);
+      console.log('Logged in:', cred.user.uid);
+      closeAuthModal();
+    } catch (err) {
+      console.error(err);
+      showError(err.message || 'Could not sign in.');
+    }
+  });
+}
+
+// Logout (added)
+if (logoutBtn) {
+  logoutBtn.addEventListener('click', async () => {
+    try {
+      await window.firebaseAuth.signOut();
+    } catch (err) {
+      console.error(err);
+      showError('Could not log out.');
+    }
+  });
+}
+
+// --- Prompt history save/load (added) ---
+async function savePromptToHistory({ goal, clarificationAnswers = null, finalPrompt }) {
+  try {
+    if (!currentUser || !window.firebaseDb) return;
+
+    const ref = window.firebaseDb
+      .collection('users')
+      .doc(currentUser.uid)
+      .collection('prompts');
+
+    await ref.add({
+      goal: goal || null,
+      clarificationAnswers: clarificationAnswers || null,
+      finalPrompt,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+  } catch (err) {
+    console.error('Error saving prompt history:', err);
+  }
+}
+
+async function loadPromptHistory() {
+  if (!currentUser || !window.firebaseDb) return;
+  try {
+    const ref = window.firebaseDb
+      .collection('users')
+      .doc(currentUser.uid)
+      .collection('prompts')
+      .orderBy('createdAt', 'desc')
+      .limit(10);
+
+    const snap = await ref.get();
+    if (snap.empty) return;
+
+    const docs = [];
+    snap.forEach((d) => docs.push({ id: d.id, ...d.data() }));
+    docs.reverse(); // oldest first
+
+    docs.forEach((item) => {
+      if (item.goal) {
+        addBubble(`<strong>You (past):</strong> ${escapeHtml(item.goal)}`, 'user');
+      }
+      addBubble(
+        `<div><strong>Optimized Prompt (saved):</strong></div>
+         <pre class="prompt-block">${escapeHtml(item.finalPrompt || '')}</pre>`,
+        'ai'
+      );
+    });
+  } catch (err) {
+    console.error('Error loading history:', err);
+  }
+}
+
+// --- Auth state listener (added) ---
+window.firebaseAuth.onAuthStateChanged(async (user) => {
+  currentUser = user || null;
+
+  if (currentUser) {
+    if (userEmailEl) {
+      userEmailEl.textContent = currentUser.email || '';
+      userEmailEl.style.display = 'inline';
+    }
+    if (loginOpenBtn) loginOpenBtn.style.display = 'none';
+    if (logoutBtn) logoutBtn.style.display = 'inline-block';
+
+    await loadPromptHistory();
+  } else {
+    if (userEmailEl) {
+      userEmailEl.textContent = '';
+      userEmailEl.style.display = 'none';
+    }
+    if (loginOpenBtn) loginOpenBtn.style.display = 'inline-block';
+    if (logoutBtn) logoutBtn.style.display = 'none';
+
+    console.log('No user logged in');
+  }
+});
 
 // --- Clarification flow state ---
 let pendingGoal = null;             // original idea
@@ -92,6 +263,13 @@ beginBtn.addEventListener('click', async () => {
         <pre class="prompt-block">${escapeHtml(data.final_prompt)}</pre>
       `;
 
+      // Save to history if logged in (added)
+      savePromptToHistory({
+        goal: pendingGoal,
+        clarificationAnswers,
+        finalPrompt: data.final_prompt,
+      });
+
       // Reset flow
       pendingGoal = null;
       setAnswerMode(false);
@@ -155,6 +333,13 @@ beginBtn.addEventListener('click', async () => {
         <div><strong>Optimized Prompt:</strong></div>
         <pre class="prompt-block">${escapeHtml(data.final_prompt)}</pre>
       `;
+
+      // Save to history if logged in (added)
+      savePromptToHistory({
+        goal,
+        finalPrompt: data.final_prompt,
+      });
+
       pendingGoal = null;
       setAnswerMode(false);
       ideaEl.value = '';
