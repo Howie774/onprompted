@@ -2,8 +2,13 @@
   --bg:#0b0d10; --panel:#11151a; --muted:#9aa4af; --text:#e8edf2;
   --brand:#7c5cff; --brand2:#45d6b6; --border:#1b2230;
 }
+
 *{box-sizing:border-box}
-html,body{height:100%}
+
+html,body{
+  height:100%;
+}
+
 body{
   margin:0;
   font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
@@ -16,10 +21,15 @@ body{
   flex-direction:column;
   align-items:center;
   justify-content:flex-start;
-  padding:24px 0 56px; /* extra bottom space so it breathes */
+  padding:24px 0 32px;        /* slightly less bottom padding + more balance */
+  min-height:100vh;           /* ensures footer sits on page, not cramped */
 }
 
-main,header,footer{width:min(960px,92vw)}
+main,header,footer{
+  width:min(960px,92vw);
+}
+
+/* ========== TOP BAR ========== */
 
 .top{
   display:flex;
@@ -55,21 +65,28 @@ main,header,footer{width:min(960px,92vw)}
   white-space:nowrap;
 }
 
+/* ========== HERO / MAIN CARD ========== */
+
 .hero{
   background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,0));
   border:1px solid var(--border);
   border-radius:20px;
   padding:28px;
+  margin-bottom:28px;         /* pushes it off the footer so it doesn’t collide */
 }
+
 .hero h1{
   margin:0 0 10px;
   font-size:clamp(28px,4vw,42px);
-  line-height:1.08
+  line-height:1.08;
 }
+
 .sub{
   margin:0 0 20px;
   color:var(--muted);
 }
+
+/* ========== INPUT AREA ========== */
 
 .input-wrap{
   display:flex;
@@ -79,7 +96,9 @@ main,header,footer{width:min(960px,92vw)}
   border-radius:16px;
   padding:16px;
   align-items:flex-start;
+  margin-bottom:14px;         /* extra breathing room above chips/panel */
 }
+
 textarea{
   flex:1;
   min-height:96px;
@@ -91,6 +110,7 @@ textarea{
   outline:none;
   font-size:16px;
 }
+
 .btn{
   cursor:pointer;
   border:none;
@@ -102,12 +122,15 @@ textarea{
 }
 .btn:active{transform:translateY(1px)}
 
+/* ========== CHIPS ========== */
+
 .chips{
   display:flex;
   gap:8px;
   flex-wrap:wrap;
-  margin:12px 0 0;
+  margin:8px 0 0;
 }
+
 .chip{
   font-size:13px;
   color:#c9d3dc;
@@ -119,8 +142,10 @@ textarea{
 }
 .chip:hover{border-style:solid}
 
+/* ========== OUTPUT PANEL ========== */
+
 .panel{
-  margin-top:20px;
+  margin-top:18px;
   background:var(--panel);
   border:1px solid var(--border);
   border-radius:16px;
@@ -144,14 +169,14 @@ textarea{
   text-transform:uppercase;
 }
 
-/* Copy button (top-right in panel) */
+/* Copy button */
 .btn-copy{
   cursor:pointer;
   padding:6px 11px;
   font-size:12px;
   border-radius:999px;
   border:1px solid #2f3b4a;
-  background:rgba(7,11,16,0.96);
+  background:#0b0d10;         /* aligned with overall bg/panel tone */
   color:#cfd9e3;
   display:inline-flex;
   align-items:center;
@@ -162,37 +187,41 @@ textarea{
   background:#141921;
 }
 
-/* Chat area */
+/* ========== CHAT AREA ========== */
+
 .chat{
   display:flex;
   flex-direction:column;
   gap:12px;
-  max-height:45vh;       /* a bit taller so content fits */
+  max-height:32vh;            /* reduced so it never crashes into footer */
   overflow:auto;
 }
+
 .bubble{
   max-width:100%;
   padding:14px 16px;
   border-radius:14px;
-  line-height:1.5;       /* nicer reading */
-  font-size:15px;        /* bumped from 14px */
+  line-height:1.5;
+  font-size:15px;
 }
+
 .bubble.ai{
   background:#0e141b;
   border:1px solid #203044;
 }
+
 .bubble.user{
   background:#141a22;
   border:1px solid #243246;
 }
 
-/* Optimized prompt block */
+/* Optimized prompt block (unified with panel so no odd box color) */
 .prompt-block{
   margin-top:8px;
   padding:12px 14px;
-  background:#05080c;
+  background:var(--panel);      /* CHANGED: matches panel */
   border-radius:10px;
-  border:1px solid #202938;
+  border:1px solid var(--border);
   font-family:SFMono-Regular,Menlo,Monaco,Consolas,monospace;
   font-size:14px;
   line-height:1.5;
@@ -200,12 +229,13 @@ textarea{
   word-wrap:break-word;
 }
 
-/* Clarifying questions + helper label */
+/* ========== CLARIFICATION NOTES ========== */
+
 .clarify-label{
   font-weight:600;
   margin-bottom:4px;
   font-size:15px;
-  color:#e8edf2;
+  color:var(--text);
 }
 
 .notes{
@@ -214,21 +244,24 @@ textarea{
   display:flex;
   flex-direction:column;
   gap:4px;
-  font-size:14px;        /* larger for readability */
+  font-size:14px;
   color:var(--muted);
   line-height:1.5;
 }
 
 .notes-label{
   margin-top:6px;
-  font-size:12px;        /* up from 10px */
+  font-size:12px;
   color:var(--muted);
   text-transform:uppercase;
   letter-spacing:.14em;
 }
 
+/* ========== FOOTER ========== */
+
 .foot{
-  margin-top:22px;
+  margin-top:auto;             /* pushes footer to bottom cleanly */
+  padding-top:16px;
   color:var(--muted);
   font-size:13px;
   display:flex;
@@ -237,12 +270,14 @@ textarea{
   flex-wrap:wrap;
   gap:10px;
 }
+
 .foot-links{
   display:inline-flex;
   align-items:center;
   gap:8px;
   flex-wrap:wrap;
 }
+
 .link{
   color:#cfd9e3;
   text-decoration:none;
@@ -250,6 +285,13 @@ textarea{
 }
 .link:hover{border-bottom-style:solid}
 
+/* ========== RESPONSIVE ========== */
+
 @media (max-width:860px){
-  .input-wrap{flex-direction:column}
+  .input-wrap{
+    flex-direction:column;
+  }
+  .chat{
+    max-height:28vh;          /* extra safety on smaller screens */
+  }
 }
