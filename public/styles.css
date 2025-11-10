@@ -1,8 +1,8 @@
 :root{
   --bg:#0b0d10;
   --panel:#11151a;
-  --muted:#9aa4af;
-  --text:#e8edf2;
+  --muted:#9fa7b6;
+  --text:#edf2ff;
   --brand:#7c5cff;
   --brand2:#45d6b6;
   --border:#1b2230;
@@ -22,6 +22,8 @@ html,body{
 body{
   margin:0;
   font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+  font-size:15px; /* around 16px target */
+  line-height:1.6;
   background:
     radial-gradient(1200px 800px at 80% -10%, rgba(124,92,255,.18), transparent 60%),
     radial-gradient(900px 600px at -10% 110%, rgba(69,214,182,.12), transparent 60%),
@@ -35,17 +37,24 @@ body{
   min-height:100vh;
 }
 
+/* Global centered column */
 main,header,footer{
-  width:min(1040px,92vw);
+  width:100%;
+}
+
+.container{
+  width:min(1100px,92vw);
+  margin:0 auto;
 }
 
 /* ========== TOP BAR ========== */
 
 .top{
+  width:min(1100px,92vw);
+  margin:0 auto 16px;
   display:flex;
   justify-content:space-between;
   align-items:center;
-  margin-bottom:16px;
   gap:16px;
   flex-wrap:wrap;
 }
@@ -129,14 +138,27 @@ main,header,footer{
   box-shadow:0 18px 50px rgba(0,0,0,.45);
 }
 
-.hero h1{
-  margin:0 0 10px;
-  font-size:clamp(28px,4vw,42px);
-  line-height:1.04;
+/* New hero typography */
+.hero-title{
+  margin:0 0 8px;
+  font-size:clamp(30px,4vw,44px);
+  line-height:1.05;
   font-weight:800;
   letter-spacing:-0.01em;
 }
 
+.hero-subtitle{
+  margin:0 0 14px;
+  color:var(--muted);
+  font-size:15px;
+  line-height:1.6;
+  max-width:640px;
+}
+
+/* Backwards compatibility if something still uses .sub / h1 */
+.hero h1{
+  margin:0 0 8px;
+}
 .sub{
   margin:0 0 14px;
   color:var(--muted);
@@ -154,37 +176,53 @@ main,header,footer{
 }
 
 .who-label{
-  font-size:12px;
+  font-size:11px;
   color:var(--muted);
   text-transform:uppercase;
   letter-spacing:.12em;
 }
 
 .who-chip{
-  font-size:11px;
+  font-size:10px;
   padding:4px 9px;
   border-radius:var(--radius-pill);
-  border:1px solid rgba(124,92,255,.35);
+  border:1px solid rgba(124,92,255,.24);
   color:#d7e0ff;
-  background:rgba(9,11,15,.9);
+  background:rgba(9,11,15,.98);
+  opacity:.9;
 }
 
 /* ========== INPUT AREA ========== */
 
-.input-wrap{
+.input-block{
   display:flex;
-  gap:12px;
+  gap:14px;
   background:var(--panel);
   border:1px solid var(--border);
   border-radius:var(--radius-md);
-  padding:14px 14px 12px;
+  padding:14px;
   align-items:flex-start;
   margin-bottom:10px;
 }
 
+.input-left{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+.input-right{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  align-items:flex-start;
+  width:220px;
+}
+
 textarea{
   flex:1;
-  min-height:96px;
+  min-height:110px;
   max-height:40vh;
   resize:vertical;
   background:transparent;
@@ -195,22 +233,39 @@ textarea{
   line-height:1.5;
 }
 
-/* Right side of input (steps + button) */
-.input-side{
+/* Steps copy next to button */
+.steps{
   display:flex;
   flex-direction:column;
-  gap:8px;
-  align-items:flex-start;
-  width:210px;
-}
-
-.steps{
+  gap:2px;
   margin:0;
   font-size:11px;
   color:var(--muted);
   line-height:1.5;
 }
+.step{
+  white-space:nowrap;
+}
 
+/* Primary button */
+.btn-primary{
+  cursor:pointer;
+  border:none;
+  font-weight:700;
+  border-radius:12px;
+  padding:11px 20px;
+  background:linear-gradient(135deg,var(--brand),var(--brand2));
+  color:#050608;
+  font-size:14px;
+  box-shadow:0 12px 26px rgba(124,92,255,.35);
+  white-space:nowrap;
+}
+.btn-primary:active{
+  transform:translateY(1px);
+  box-shadow:0 6px 16px rgba(0,0,0,.45);
+}
+
+/* Legacy .btn (if used elsewhere) */
 .btn{
   cursor:pointer;
   border:none;
@@ -231,7 +286,7 @@ textarea{
 /* ========== PRESETS ========== */
 
 .preset-label{
-  margin:2px 0 4px;
+  margin:2px 0 2px;
   font-size:11px;
   color:var(--muted);
 }
@@ -244,18 +299,18 @@ textarea{
 }
 
 .chip{
-  font-size:12px;
+  font-size:11px;
   color:#c9d3dc;
   border:1px solid #2a3542;
   background:rgba(10,13,18,.98);
-  padding:7px 11px;
+  padding:6px 10px;
   border-radius:var(--radius-pill);
   cursor:pointer;
   transition:all .16s ease-out;
 }
 .chip:hover{
   border-color:var(--brand2);
-  box-shadow:0 0 12px rgba(69,214,182,.18);
+  box-shadow:0 0 10px rgba(69,214,182,.16);
   transform:translateY(-1px);
 }
 
@@ -274,12 +329,12 @@ textarea{
   justify-content:space-between;
   align-items:center;
   gap:12px;
-  margin-bottom:4px;
+  margin-bottom:6px;
 }
 
 .panel h3{
   margin:0;
-  font-size:13px;
+  font-size:11px;
   color:#b9c3cc;
   letter-spacing:.16em;
   text-transform:uppercase;
@@ -295,7 +350,7 @@ textarea{
 .btn-copy{
   cursor:pointer;
   padding:6px 11px;
-  font-size:11px;
+  font-size:10px;
   border-radius:var(--radius-pill);
   border:1px solid #2f3b4a;
   background:#0b0d10;
@@ -324,7 +379,7 @@ textarea{
   padding:10px 11px;
   border-radius:14px;
   line-height:1.5;
-  font-size:14px;
+  font-size:13px;
 }
 
 .bubble.ai{
@@ -338,7 +393,7 @@ textarea{
 }
 
 .example-label{
-  font-size:10px;
+  font-size:9px;
   text-transform:uppercase;
   letter-spacing:.14em;
   color:var(--muted);
@@ -353,7 +408,7 @@ textarea{
   border-radius:10px;
   border:1px solid var(--border);
   font-family:SFMono-Regular,Menlo,Monaco,Consolas,monospace;
-  font-size:12px;
+  font-size:11px;
   line-height:1.6;
   white-space:pre-wrap;
   word-wrap:break-word;
@@ -363,7 +418,7 @@ textarea{
 
 .section-title{
   margin:0 0 4px;
-  font-size:18px;
+  font-size:19px;
   font-weight:700;
 }
 
@@ -375,7 +430,7 @@ textarea{
 }
 
 .how{
-  margin-bottom:24px;
+  margin-bottom:26px;
 }
 
 .how-steps{
@@ -386,7 +441,7 @@ textarea{
 
 .how-step{
   flex:1 1 0;
-  min-width:180px;
+  min-width:220px;
   padding:12px 12px 11px;
   border-radius:14px;
   border:1px solid var(--border);
@@ -420,23 +475,24 @@ textarea{
 /* ========== EXAMPLES SECTION ========== */
 
 .examples{
-  margin-bottom:22px;
+  margin-bottom:24px;
+}
+
+/* Row pairs: messy vs optimized */
+.example-pair{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-bottom:12px;
 }
 
 .example-card{
-  display:flex;
-  flex-wrap:wrap;
-  gap:14px;
+  flex:1 1 0;
+  min-width:240px;
   padding:11px 11px 10px;
   border-radius:14px;
   border:1px solid var(--border);
   background:rgba(8,10,14,.98);
-  margin-bottom:10px;
-}
-
-.example-col{
-  flex:1 1 0;
-  min-width:220px;
 }
 
 .example-tag{
@@ -444,11 +500,16 @@ textarea{
   padding:3px 8px;
   font-size:9px;
   border-radius:8px;
-  background:rgba(156,163,175,.15);
-  color:var(--muted);
+  background:rgba(156,163,175,.16);
+  color:#aeb6c4;
   text-transform:uppercase;
   letter-spacing:.12em;
   margin-bottom:4px;
+}
+
+.example-tag.bad{
+  background:rgba(156,163,175,.18);
+  color:#e5e7eb;
 }
 
 .example-tag.good{
@@ -466,14 +527,14 @@ textarea{
 /* ========== PRICING / TRUST TEXT ========== */
 
 .pricing-note{
-  margin-bottom:10px;
-  font-size:11px;
+  margin-bottom:14px;
+  font-size:12px;
   color:var(--muted);
   line-height:1.6;
 }
 
 .trust-line{
-  margin:0 0 4px;
+  margin:0 0 6px;
 }
 
 .pricing-line{
@@ -483,8 +544,10 @@ textarea{
 /* ========== FOOTER ========== */
 
 .foot{
-  margin-top:auto;
+  width:min(1100px,92vw);
+  margin:18px auto 0;
   padding-top:10px;
+  border-top:1px solid rgba(56,68,84,.6);
   color:var(--muted);
   font-size:12px;
   display:flex;
@@ -513,18 +576,20 @@ textarea{
 /* ========== RESPONSIVE ========== */
 
 @media (max-width:860px){
-  .input-wrap{
+  .input-block{
     flex-direction:column;
   }
-  .input-side{
+  .input-right{
     width:100%;
     align-items:flex-start;
   }
-  .btn{
-    width:auto;
+  .steps{
+    flex-direction:row;
+    flex-wrap:wrap;
+    gap:6px;
   }
-  .chat{
-    max-height:28vh;
+  .example-pair{
+    flex-direction:column;
   }
   .how-steps{
     flex-direction:column;
