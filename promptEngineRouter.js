@@ -288,7 +288,8 @@ If the request IS already fully clear, specific, and well-scoped:
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: userMessage },
       ],
-      response_format: { type: 'json' },
+      // CHANGED per API error: use text.format instead of response_format
+      text: { format: 'json' },
     });
 
     const raw = response.output[0].content[0].text || '{}';
@@ -300,7 +301,7 @@ If the request IS already fully clear, specific, and well-scoped:
       console.error('Failed to parse JSON from model:', raw);
       return res.status(502).json({
         error: 'Model returned invalid JSON.',
-        details: raw, // <— only addition: expose raw for debugging
+        details: raw,
       });
     }
 
