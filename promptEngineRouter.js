@@ -283,7 +283,7 @@ If the request IS already fully clear, specific, and well-scoped:
       `.trim();
 
     const response = await openai.responses.create({
-      model: 'gpt-5.1-mini',
+      model: 'gpt-4.1-mini',
       input: [
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: userMessage },
@@ -300,6 +300,7 @@ If the request IS already fully clear, specific, and well-scoped:
       console.error('Failed to parse JSON from model:', raw);
       return res.status(502).json({
         error: 'Model returned invalid JSON.',
+        details: raw, // <— only addition: expose raw for debugging
       });
     }
 
@@ -308,6 +309,7 @@ If the request IS already fully clear, specific, and well-scoped:
       if (!Array.isArray(parsed.questions) || parsed.questions.length === 0) {
         return res.status(502).json({
           error: 'Model indicated needs_clarification without valid questions.',
+          details: parsed,
         });
       }
       return res.json({
@@ -334,6 +336,7 @@ If the request IS already fully clear, specific, and well-scoped:
     console.error('Unexpected model response shape:', parsed);
     return res.status(502).json({
       error: 'Unexpected response from model.',
+      details: parsed,
     });
   } catch (err) {
     console.error('Prompt optimizer error:', err);
