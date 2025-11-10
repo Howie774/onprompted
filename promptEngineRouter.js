@@ -238,7 +238,6 @@ Requirements:
 - [reasoning expectations]
 - [safety / honesty instructions]
 
-All necessary clarifications have been resolved by PROMPT-OPTIMIZER.
 Use the information and assumptions above to produce the final output directly,
 without asking the user additional questions."
 

@@ -3,43 +3,204 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>OnPrompted — One box. Your idea. We handle the rest.</title>
+  <title>OnPrompted — Turn rough ideas into perfect AI prompts.</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <header class="top">
-    <div class="logo"><span class="dot"></span> OnPrompted</div>
-    <div class="badge">Prompt engine live</div>
+    <div class="logo">
+      <span class="dot"></span>
+      OnPrompted
+    </div>
+    <nav class="top-nav">
+      <span class="badge">
+        <span class="status-dot"></span>
+        Prompt engine: Live
+      </span>
+      <a href="#how-it-works" class="top-link">How it works</a>
+      <a href="#pricing" class="top-link top-link-muted">
+        Pricing <span class="soon-pill">Soon</span>
+      </a>
+    </nav>
   </header>
 
-  <main class="hero">
-    <h1>Prompt your way to success.</h1>
-    <p class="sub">
-      Type your idea in plain English. We’ll detect what you’re trying to do
-      (code, content, video, strategy, advice) and generate a production-ready prompt.
-    </p>
+  <main>
+    <!-- HERO / MAIN CARD -->
+    <section class="hero">
+      <h1>Turn rough ideas into perfect AI prompts.</h1>
+      <p class="sub">
+        Paste what you’re trying to do (code, content, ads, emails, strategy, etc.).
+        OnPrompted rewrites it into a clear, structured prompt you can drop into any AI model.
+      </p>
 
-    <div class="input-wrap">
-      <textarea id="idea" placeholder="Describe what you want…"></textarea>
-      <button id="begin" class="btn">Begin</button>
-    </div>
-
-    <div class="chips" id="chips">
-      <button class="chip" data-example="Turn my 60s product footage into a 15s TikTok with 3 quick cuts.">Video short from long clip</button>
-      <button class="chip" data-example="Refactor my React Native cart to remove a dependency and keep styles the same.">Refactor RN cart</button>
-      <button class="chip" data-example="I need a 7-day study plan for orgo, 2h/day, aiming for a B+.">Study plan in 7 days</button>
-    </div>
-
-    <section class="panel">
-      <div class="panel-header">
-        <h3>Optimized prompt output</h3>
-        <button id="copyPrompt" class="btn-copy" type="button">Copy prompt</button>
+      <div class="who-for">
+        <span class="who-label">Built for:</span>
+        <span class="who-chip">Marketers</span>
+        <span class="who-chip">Founders</span>
+        <span class="who-chip">Engineers</span>
+        <span class="who-chip">Creators</span>
+        <span class="who-chip">Agencies</span>
       </div>
-      <div id="chat" class="chat">
-        <div class="bubble ai">
-          Hi! Paste your idea and hit <strong>Begin</strong>. I’ll return a fully-structured prompt you can drop into any AI model.
+
+      <div class="input-wrap">
+        <textarea
+          id="idea"
+          placeholder="Paste your messy prompt or idea. Example: ‘Write a launch email for my new SaaS that helps students track deadlines.’"
+        ></textarea>
+
+        <div class="input-side">
+          <p class="steps">
+            Step 1. Paste idea → Step 2. Click <strong>Optimize prompt</strong> →
+            Step 3. Copy into ChatGPT / Claude / Gemini.
+          </p>
+          <button id="begin" class="btn">Optimize prompt</button>
         </div>
       </div>
+
+      <div class="preset-label">Try a preset:</div>
+      <div class="chips" id="chips">
+        <button class="chip" data-example="Turn my 60s product footage into a 15s TikTok with 3 quick cuts.">
+          Video short from long clip
+        </button>
+        <button class="chip" data-example="Refactor my React Native cart to remove a dependency and keep styles the same.">
+          Refactor RN cart
+        </button>
+        <button class="chip" data-example="I need a 7-day study plan for orgo, 2h/day, aiming for a B+.">
+          Study plan in 7 days
+        </button>
+      </div>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h3>Optimized prompt output</h3>
+          <button id="copyPrompt" class="btn-copy" type="button">Copy prompt</button>
+        </div>
+        <p class="panel-subcopy">
+          OnPrompted will return a fully-structured, model-ready prompt with clear goals,
+          constraints, and format instructions.
+        </p>
+        <div id="chat" class="chat">
+          <div class="bubble ai example">
+            <div class="example-label">Example output</div>
+            <div class="prompt-block">
+You are an email copywriter for a SaaS that helps college students manage deadlines.
+
+Goal:
+- Write a high-converting launch email announcing a new productivity app for students.
+- Drive clicks to download the app within 24 hours.
+
+Audience:
+- College students (18–24) juggling classes, exams, and side commitments.
+- Tech-comfortable, easily overwhelmed by long emails.
+
+Constraints:
+- 250–350 words.
+- Clear subject line (3 options).
+- Friendly, motivating tone, never scammy or overhyped.
+- Skimmable formatting with short paragraphs and 2–3 bolded phrases.
+
+Output format:
+1) Subject line options
+2) Preview text
+3) Full email body in markdown
+4) One-line CTA to close
+
+When you’re ready, replace this scenario with your own details above. OnPrompted will rebuild this into a tailored, model-ready prompt.
+            </div>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section id="how-it-works" class="how">
+      <h2 class="section-title">How it works</h2>
+      <p class="section-sub">
+        Built to remove prompt guesswork for busy builders.
+      </p>
+      <div class="how-steps">
+        <div class="how-step">
+          <div class="how-icon">1</div>
+          <h3>Paste your idea</h3>
+          <p>Drop in your messy prompt, notes, or brief. Any use case, any level of chaos.</p>
+        </div>
+        <div class="how-step">
+          <div class="how-icon">2</div>
+          <h3>OnPrompted refactors it</h3>
+          <p>We apply best-practice prompt patterns for clarity, structure, and reliability.</p>
+        </div>
+        <div class="how-step">
+          <div class="how-icon">3</div>
+          <h3>Run it anywhere</h3>
+          <p>Copy the optimized meta-prompt into ChatGPT, Claude, Gemini, Perplexity, or your own stack.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- BEFORE / AFTER EXAMPLES -->
+    <section id="examples" class="examples">
+      <h2 class="section-title">See it in action</h2>
+
+      <div class="example-card">
+        <div class="example-col">
+          <div class="example-tag">Messy input</div>
+          <p>
+            “I need a 60s TikTok selling my new productivity app for college students.”
+          </p>
+        </div>
+        <div class="example-col">
+          <div class="example-tag good">OnPrompted optimized prompt</div>
+          <p>
+            “You are a performance creative strategist. Create a 60-second TikTok script for a productivity app for
+            college students that: (1) hooks in the first 3 seconds with a relatable exam-week scenario,
+            (2) shows 3 app benefits in under 40 seconds, (3) ends with a strong download CTA. Include on-screen text
+            cues and VO lines.”
+          </p>
+        </div>
+      </div>
+
+      <div class="example-card">
+        <div class="example-col">
+          <div class="example-tag">Messy input</div>
+          <p>
+            “Help me write documentation for my API. It’s for a payments thing.”
+          </p>
+        </div>
+        <div class="example-col">
+          <div class="example-tag good">OnPrompted optimized prompt</div>
+          <p>
+            “You are a technical writer. Draft docs for a REST payments API including: overview, auth, endpoints table,
+            request/response examples, common errors, and quickstart. Ask for any missing details before finalizing.”
+          </p>
+        </div>
+      </div>
+
+      <div class="example-card">
+        <div class="example-col">
+          <div class="example-tag">Messy input</div>
+          <p>
+            “Make me a cold email for my agency.”
+          </p>
+        </div>
+        <div class="example-col">
+          <div class="example-tag good">OnPrompted optimized prompt</div>
+          <p>
+            “You are a B2B copywriter. Write a 120–160 word cold email for a paid ads agency helping ecom brands at
+            $50k–200k/month scale. Focus on 1 key case study, 1 clear offer, no fluff, and a single low-friction CTA.”
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- PRICING / TRUST / SAFETY PLACEHOLDER -->
+    <section id="pricing" class="pricing-note">
+      <p class="trust-line">
+        Works with ChatGPT, Claude, Gemini, Perplexity, and any LLM.
+        Your inputs are processed securely; no spammy reselling of your data.
+      </p>
+      <p class="pricing-line">
+        Pricing: simple plans coming soon. For now, explore the engine freely while we refine it with real-world use.
+      </p>
     </section>
   </main>
 
