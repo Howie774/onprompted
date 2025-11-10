@@ -1,6 +1,8 @@
 const ideaEl = document.getElementById('idea');
 const beginBtn = document.getElementById('begin');
 const chat = document.getElementById('chat');
+const copyBtn = document.getElementById('copyPrompt');
+
 document.getElementById('year').textContent = new Date().getFullYear();
 
 document.getElementById('chips').addEventListener('click', (e) => {
@@ -26,7 +28,7 @@ function escapeHtml(s) {
 }
 
 // --- Clarification flow state ---
-let pendingGoal = null;           // original idea
+let pendingGoal = null;             // original idea
 let awaitingClarifications = false; // if true, next submit = send answers
 
 function setAnswerMode(on) {
@@ -131,11 +133,11 @@ beginBtn.addEventListener('click', async () => {
     // If clarifications are needed
     if (data.status === 'needs_clarification' && Array.isArray(data.questions) && data.questions.length) {
       const qsHtml = data.questions
-        .map((q, i) => `<li>${escapeHtml(q)}</li>`)
+        .map((q) => `<li>${escapeHtml(q)}</li>`)
         .join('');
 
       loading.innerHTML = `
-        I have a few quick questions to make this perfect:
+        <div class="clarify-label">I have a few quick questions to make this perfect:</div>
         <ul class="notes">${qsHtml}</ul>
         <div class="notes-label">Answer above, then hit “Answer & Generate”.</div>
       `;
@@ -165,6 +167,42 @@ beginBtn.addEventListener('click', async () => {
     loading.innerHTML = 'Network error talking to the prompt engine.';
   }
 });
+
+// Copy latest optimized prompt to clipboard
+if (copyBtn) {
+  copyBtn.addEventListener('click', async () => {
+    try {
+      // Prefer the last explicit optimized prompt block
+      const lastPromptBlock = chat.querySelector('.prompt-block:last-of-type');
+
+      let textToCopy = '';
+      if (lastPromptBlock) {
+        textToCopy = lastPromptBlock.textContent.trim();
+      } else {
+        // Fallback: last AI bubble
+        const aiBubbles = chat.querySelectorAll('.bubble.ai');
+        const lastAi = aiBubbles[aiBubbles.length - 1];
+        if (lastAi) {
+          textToCopy = lastAi.textContent.trim();
+        }
+      }
+
+      if (!textToCopy) {
+        alert('No prompt to copy yet. Generate one first.');
+        return;
+      }
+
+      await navigator.clipboard.writeText(textToCopy);
+      copyBtn.textContent = 'Copied';
+      setTimeout(() => {
+        copyBtn.textContent = 'Copy prompt';
+      }, 1500);
+    } catch (err) {
+      console.error('Clipboard error:', err);
+      alert('Could not copy. Please copy manually.');
+    }
+  });
+}
 
 // Optional: echo test (kept for sanity)
 (async function pingEcho() {

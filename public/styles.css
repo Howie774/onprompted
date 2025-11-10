@@ -16,7 +16,7 @@ body{
   flex-direction:column;
   align-items:center;
   justify-content:flex-start;
-  padding:24px 0;
+  padding:24px 0 56px; /* extra bottom space so it breathes */
 }
 
 main,header,footer{width:min(960px,92vw)}
@@ -61,8 +61,15 @@ main,header,footer{width:min(960px,92vw)}
   border-radius:20px;
   padding:28px;
 }
-.hero h1{margin:0 0 10px; font-size:clamp(28px,4vw,42px); line-height:1.08}
-.sub{margin:0 0 20px; color:var(--muted)}
+.hero h1{
+  margin:0 0 10px;
+  font-size:clamp(28px,4vw,42px);
+  line-height:1.08
+}
+.sub{
+  margin:0 0 20px;
+  color:var(--muted);
+}
 
 .input-wrap{
   display:flex;
@@ -95,7 +102,12 @@ textarea{
 }
 .btn:active{transform:translateY(1px)}
 
-.chips{display:flex; gap:8px; flex-wrap:wrap; margin:12px 0 0}
+.chips{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin:12px 0 0;
+}
 .chip{
   font-size:13px;
   color:#c9d3dc;
@@ -114,27 +126,56 @@ textarea{
   border-radius:16px;
   padding:16px;
 }
+
+/* Panel header: title + copy button */
+.panel-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  margin-bottom:10px;
+}
+
 .panel h3{
-  margin:0 0 10px;
+  margin:0;
   font-size:14px;
   color:#b9c3cc;
   letter-spacing:.3px;
   text-transform:uppercase;
 }
 
+/* Copy button (top-right in panel) */
+.btn-copy{
+  cursor:pointer;
+  padding:6px 11px;
+  font-size:12px;
+  border-radius:999px;
+  border:1px solid #2f3b4a;
+  background:rgba(7,11,16,0.96);
+  color:#cfd9e3;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  flex-shrink:0;
+}
+.btn-copy:hover{
+  background:#141921;
+}
+
+/* Chat area */
 .chat{
   display:flex;
   flex-direction:column;
   gap:12px;
-  max-height:38vh;
+  max-height:45vh;       /* a bit taller so content fits */
   overflow:auto;
 }
 .bubble{
-  max-width:92%;
-  padding:12px 14px;
+  max-width:100%;
+  padding:14px 16px;
   border-radius:14px;
-  line-height:1.35;
-  font-size:14px;
+  line-height:1.5;       /* nicer reading */
+  font-size:15px;        /* bumped from 14px */
 }
 .bubble.ai{
   background:#0e141b;
@@ -145,36 +186,45 @@ textarea{
   border:1px solid #243246;
 }
 
-/* Optimized prompt formatting */
-
+/* Optimized prompt block */
 .prompt-block{
   margin-top:8px;
-  padding:10px 12px;
+  padding:12px 14px;
   background:#05080c;
   border-radius:10px;
   border:1px solid #202938;
   font-family:SFMono-Regular,Menlo,Monaco,Consolas,monospace;
-  font-size:13px;
+  font-size:14px;
+  line-height:1.5;
   white-space:pre-wrap;
   word-wrap:break-word;
 }
 
-.notes-label{
-  margin-top:8px;
-  font-size:10px;
-  color:var(--muted);
-  text-transform:uppercase;
-  letter-spacing:.14em;
+/* Clarifying questions + helper label */
+.clarify-label{
+  font-weight:600;
+  margin-bottom:4px;
+  font-size:15px;
+  color:#e8edf2;
 }
 
 .notes{
   margin:4px 0 0;
-  padding-left:16px;
+  padding-left:18px;
   display:flex;
   flex-direction:column;
-  gap:2px;
-  font-size:12px;
+  gap:4px;
+  font-size:14px;        /* larger for readability */
   color:var(--muted);
+  line-height:1.5;
+}
+
+.notes-label{
+  margin-top:6px;
+  font-size:12px;        /* up from 10px */
+  color:var(--muted);
+  text-transform:uppercase;
+  letter-spacing:.14em;
 }
 
 .foot{
