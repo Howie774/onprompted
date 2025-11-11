@@ -92,6 +92,7 @@ function startNewPromptSession() {
   setAnswerMode(false);
   if (ideaEl) {
     ideaEl.value = '';
+    autoResizeIdea();
   }
   resetChatToExample();
 }
@@ -102,6 +103,7 @@ document.getElementById('chips').addEventListener('click', (e) => {
   const ex = e.target.closest('.chip')?.dataset.example;
   if (!ex) return;
   ideaEl.value = ex;
+  autoResizeIdea();
   ideaEl.focus();
 });
 
@@ -515,7 +517,10 @@ function openPromptFromHistory(id) {
     );
   }
 
-  if (ideaEl) ideaEl.value = '';
+  if (ideaEl) {
+    ideaEl.value = '';
+    autoResizeIdea();
+  }
 }
 
 /* Enable inline renaming of a prompt tab title */
@@ -674,11 +679,28 @@ function setAnswerMode(on) {
     ideaEl.placeholder =
       "Paste your messy prompt or idea. Example: ‘Write a launch email for my new SaaS that helps students track deadlines.’";
   }
+
+  autoResizeIdea();
+}
+
+/* Auto-resize the main textarea as the user types */
+function autoResizeIdea() {
+  if (!ideaEl) return;
+
+  // Reset height to measure correct scrollHeight
+  ideaEl.style.height = 'auto';
+
+  const minHeight = 120; // px, comfortable base
+  const maxHeight = Math.max(window.innerHeight * 0.4, 260); // grow up to ~40vh or 260px+
+
+  const next = Math.min(ideaEl.scrollHeight, maxHeight);
+  ideaEl.style.height = Math.max(next, minHeight) + 'px';
 }
 
 // Initial state
 setAnswerMode(false);
 resetChatToExample();
+autoResizeIdea();
 
 beginBtn.addEventListener('click', async () => {
   const text = ideaEl.value.trim();
@@ -755,6 +777,7 @@ beginBtn.addEventListener('click', async () => {
       pendingGoal = null;
       setAnswerMode(false);
       ideaEl.value = '';
+      autoResizeIdea();
     } catch (e) {
       console.error('[PROMPT] Network error (final):', e);
       loading.innerHTML =
@@ -817,6 +840,7 @@ beginBtn.addEventListener('click', async () => {
 
       ideaEl.value = '';
       setAnswerMode(true);
+      autoResizeIdea();
       ideaEl.focus();
       return;
     }
@@ -841,6 +865,7 @@ beginBtn.addEventListener('click', async () => {
       pendingGoal = null;
       setAnswerMode(false);
       ideaEl.value = '';
+      autoResizeIdea();
       return;
     }
 
@@ -852,6 +877,11 @@ beginBtn.addEventListener('click', async () => {
       'Network error talking to the prompt engine.';
   }
 });
+
+/* Also auto-resize on direct typing */
+if (ideaEl) {
+  ideaEl.addEventListener('input', autoResizeIdea);
+}
 
 /* ========== Copy prompt button ========== */
 
