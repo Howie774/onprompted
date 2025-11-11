@@ -1,12 +1,8 @@
 const ideaEl = document.getElementById('idea');
 const beginBtn = document.getElementById('begin');
 const chat = document.getElementById('chat');
+const exampleBubble = document.querySelector('.bubble.ai.example');
 const copyBtn = document.getElementById('copyPrompt');
-
-// Capture initial example bubble so we can restore it on "New prompt"
-const initialExampleBubble = chat
-  ? chat.querySelector('.bubble.ai.example')?.cloneNode(true)
-  : null;
 
 // Auth elements
 const loginOpenBtn = document.getElementById('loginOpenBtn');
@@ -68,7 +64,6 @@ function ensureNewPromptButton() {
 
   newPromptBtn = document.createElement('button');
   newPromptBtn.id = 'newPromptBtn';
-  // Reuse existing pill style so it matches the UI
   newPromptBtn.className = 'plan-upgrade-btn account-new-prompt-btn';
   newPromptBtn.type = 'button';
   newPromptBtn.textContent = 'New prompt';
@@ -79,12 +74,14 @@ function ensureNewPromptButton() {
   header.appendChild(newPromptBtn);
 }
 
-/* Reset chat area back to just the example bubble */
+/* Reset chat area back to example (only before first real use) */
 function resetChatToExample() {
   if (!chat) return;
   chat.innerHTML = '';
-  if (initialExampleBubble) {
-    chat.appendChild(initialExampleBubble.cloneNode(true));
+
+  // Only show the example on a fresh session before any real prompts
+  if (!hasUserRunPrompt && exampleBubble) {
+    chat.appendChild(exampleBubble);
   }
 }
 
@@ -477,6 +474,11 @@ async function loadPromptHistory() {
     snap.forEach((d) => docs.push({ id: d.id, ...d.data() }));
 
     promptHistory = docs;
+
+    if (docs.length) {
+      clearExampleIfPresent();
+    }
+
     renderSidebarHistory(docs);
   } catch (err) {
     console.error('Error loading history:', err);
@@ -493,7 +495,9 @@ function openPromptFromHistory(id) {
   setAnswerMode(false);
   if (!chat) return;
 
-  resetChatToExample();
+  // For history view, show only real content (no example)
+  chat.innerHTML = '';
+  hasUserRunPrompt = true;
 
   if (item.goal) {
     addBubble(
@@ -646,6 +650,16 @@ window.firebaseAuth.onIdTokenChanged(async (user) => {
 
 /* ========== Clarification flow ========== */
 
+let hasUserRunPrompt = false;
+
+function clearExampleIfPresent() {
+  if (chat) {
+    const ex = chat.querySelector('.bubble.ai.example');
+    if (ex) ex.remove();
+  }
+  hasUserRunPrompt = true;
+}
+
 let pendingGoal = null;
 let awaitingClarifications = false;
 
@@ -673,6 +687,8 @@ beginBtn.addEventListener('click', async () => {
     ideaEl.focus();
     return;
   }
+
+  clearExampleIfPresent();
 
   // Answering clarifications
   if (awaitingClarifications) {

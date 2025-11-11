@@ -321,7 +321,7 @@ textarea{
   background:var(--panel);
   border:1px solid var(--border);
   border-radius:var(--radius-md);
-  padding:14px;
+  padding:16px 14px 14px;
 }
 
 .panel-header{
@@ -370,8 +370,9 @@ textarea{
   display:flex;
   flex-direction:column;
   gap:10px;
-  max-height:32vh;
-  overflow:auto;
+  max-height:52vh;      /* more breathing room */
+  overflow-y:auto;
+  padding-right:4px;    /* space for scrollbar */
 }
 
 .bubble{
@@ -408,7 +409,7 @@ textarea{
   border-radius:10px;
   border:1px solid var(--border);
   font-family:SFMono-Regular,Menlo,Monaco,Consolas,monospace;
-  font-size:12px;
+  font-size:13px;
   line-height:1.7;
   white-space:pre-wrap;
   word-wrap:break-word;
