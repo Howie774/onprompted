@@ -9,6 +9,8 @@
   --radius-lg:20px;
   --radius-md:16px;
   --radius-pill:999px;
+  --accent-warm:#ffb86b;   /* NEW */
+  --accent-soft:#ff9f7a;   /* NEW */
 }
 
 *{
@@ -26,7 +28,7 @@ body{
   line-height:1.6;
   background:
     radial-gradient(1200px 800px at 80% -10%, rgba(124,92,255,.18), transparent 60%),
-    radial-gradient(900px 600px at -10% 110%, rgba(69,214,182,.12), transparent 60%),
+    radial-gradient(900px 600px at -10% 110%, rgba(255,184,107,.12), transparent 60%),
     var(--bg);
   color:var(--text);
   display:flex;
@@ -88,10 +90,10 @@ main,header,footer{
   align-items:center;
   gap:6px;
   font-size:12px;
-  color:var(--brand2);
+  color:var(--accent-warm);
   padding:6px 11px;
   border-radius:var(--radius-pill);
-  border:1px solid rgba(69,214,182,.35);
+  border:1px solid rgba(255,184,107,.35);
   background:rgba(11,13,16,.95);
 }
 
@@ -99,8 +101,8 @@ main,header,footer{
   width:6px;
   height:6px;
   border-radius:50%;
-  background:var(--brand2);
-  box-shadow:0 0 6px var(--brand2);
+  background:var(--accent-warm);
+  box-shadow:0 0 6px var(--accent-warm);
 }
 
 .top-link{
@@ -112,7 +114,7 @@ main,header,footer{
   opacity:.9;
 }
 .top-link:hover{
-  border-bottom-color:var(--brand2);
+  border-bottom-color:var(--accent-soft);
   opacity:1;
 }
 .top-link-muted{
@@ -130,7 +132,7 @@ main,header,footer{
 /* ========== HERO / MAIN CARD ========== */
 
 .hero{
-  background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,0));
+  background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,184,107,.02));
   border:1px solid var(--border);
   border-radius:var(--radius-lg);
   padding:24px 22px 20px;
@@ -309,8 +311,8 @@ textarea{
   transition:all .16s ease-out;
 }
 .chip:hover{
-  border-color:var(--brand2);
-  box-shadow:0 0 10px rgba(69,214,182,.16);
+  border-color:var(--accent-soft);
+  box-shadow:0 0 10px rgba(255,159,122,.18);
   transform:translateY(-1px);
 }
 
@@ -335,7 +337,7 @@ textarea{
 .panel h3{
   margin:0;
   font-size:12px;
-  color:#b9c3cc;
+  color:var(--accent-warm);
   letter-spacing:.16em;
   text-transform:uppercase;
 }
@@ -469,7 +471,7 @@ textarea{
   align-items:center;
   justify-content:center;
   font-size:11px;
-  background:linear-gradient(135deg,var(--brand),var(--brand2));
+  background:linear-gradient(135deg,var(--brand),var(--accent-warm));
   color:#050608;
 }
 
@@ -514,7 +516,7 @@ textarea{
 
 .example-tag.good{
   background:rgba(124,92,255,.2);
-  color:var(--brand2);
+  color:var(--accent-warm);
 }
 
 .example-card p{
@@ -727,7 +729,7 @@ textarea{
   border-radius:24px;
   background:
     radial-gradient(220px 220px at 0% 0%, rgba(124,92,255,.16), transparent),
-    radial-gradient(220px 220px at 100% 0%, rgba(69,214,182,.10), transparent),
+    radial-gradient(220px 220px at 100% 0%, rgba(255,184,107,.10), transparent),
     #05070a;
   border:1px solid rgba(69,82,104,.95);
   box-shadow:0 26px 70px rgba(0,0,0,.9);
@@ -823,6 +825,7 @@ textarea{
   border-radius:22px;
   background:
     radial-gradient(180px 220px at 0% 0%, rgba(124,92,255,.16), transparent),
+    radial-gradient(220px 260px at 100% 100%, rgba(255,184,107,.10), transparent),
     #020308;
   border:1px solid rgba(56,68,84,.95);
   box-shadow:0 26px 70px rgba(0,0,0,.95);
@@ -867,7 +870,7 @@ textarea{
   font-size:12px;
   padding:7px 13px;
   border-radius:var(--radius-pill);
-  background:linear-gradient(135deg,rgba(124,92,255,.24),rgba(69,214,182,.14));
+  background:linear-gradient(135deg,rgba(124,92,255,.24),rgba(255,184,107,.14));
   border:1px solid rgba(124,92,255,.9);
   color:var(--brand2);
   display:inline-flex;
@@ -1054,7 +1057,9 @@ textarea{
   content:"";
   position:absolute;
   inset:0;
-  background:radial-gradient(circle at top right, rgba(124,92,255,.16), transparent 60%);
+  background:
+    radial-gradient(circle at top right, rgba(124,92,255,.16), transparent 60%),
+    radial-gradient(circle at bottom left, rgba(255,184,107,.14), transparent 70%);
   opacity:.9;
   pointer-events:none;
 }
@@ -1096,7 +1101,7 @@ textarea{
   width:5px;
   height:5px;
   border-radius:50%;
-  background:linear-gradient(135deg,var(--brand),var(--brand2));
+  background:linear-gradient(135deg,var(--brand),var(--accent-warm));
   opacity:.9;
 }
 
