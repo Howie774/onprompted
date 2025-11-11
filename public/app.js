@@ -32,6 +32,9 @@ const starterPlanBtn = document.getElementById('starterPlanBtn');
 const proPlanBtn = document.getElementById('proPlanBtn');
 const agencyPlanBtn = document.getElementById('agencyPlanBtn');
 
+// NEW: Manage billing button (Stripe Billing Portal)
+const manageBillingBtn = document.getElementById('manageBillingBtn');
+
 let currentUser = null;
 let currentIdToken = null; // sent to /api routes
 
@@ -604,6 +607,11 @@ window.firebaseAuth.onAuthStateChanged(async (user) => {
     if (loginOpenBtn) loginOpenBtn.style.display = 'none';
     if (logoutBtn) logoutBtn.style.display = 'inline-block';
 
+    // Show "Manage billing" when logged in (if present in DOM)
+    if (manageBillingBtn) {
+      manageBillingBtn.style.display = 'inline-flex';
+    }
+
     try {
       currentIdToken = await currentUser.getIdToken();
       console.log(
@@ -626,6 +634,11 @@ window.firebaseAuth.onAuthStateChanged(async (user) => {
     }
     if (loginOpenBtn) loginOpenBtn.style.display = 'inline-block';
     if (logoutBtn) logoutBtn.style.display = 'none';
+
+    // Hide "Manage billing" when logged out
+    if (manageBillingBtn) {
+      manageBillingBtn.style.display = 'none';
+    }
 
     currentIdToken = null;
     hidePlanUi();
@@ -1007,6 +1020,75 @@ async function startCheckout(plan) {
   }
 }
 
+// NEW: Open Stripe Billing Portal (Manage billing)
+async function openBillingPortal() {
+  console.log('[PORTAL] openBillingPortal called:', {
+    hasUser: !!currentUser,
+    hasToken: !!currentIdToken,
+  });
+
+  if (!currentUser || !currentIdToken) {
+    console.warn(
+      '[PORTAL] No user/token, opening auth modal instead.'
+    );
+    openAuthModal();
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/billing/create-portal-session', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${currentIdToken}`,
+      },
+      body: JSON.stringify({}),
+    });
+
+    const responseText = await res.text();
+    let data;
+    try {
+      data = responseText ? JSON.parse(responseText) : {};
+    } catch (e) {
+      console.error(
+        '[PORTAL] Failed to parse JSON response:',
+        responseText
+      );
+      data = { raw: responseText };
+    }
+
+    console.log(
+      '[PORTAL] Response status:',
+      res.status,
+      'body:',
+      data
+    );
+
+    if (!res.ok) {
+      const msg =
+        data.message ||
+        data.error ||
+        `Portal request failed with status ${res.status}`;
+      showError(`Could not open billing portal: ${msg}`);
+      return;
+    }
+
+    if (data.url) {
+      console.log('[PORTAL] Redirecting to portal URL:', data.url);
+      window.location.href = data.url;
+    } else {
+      console.error(
+        '[PORTAL] Missing URL in successful portal response:',
+        data
+      );
+      showError('Billing portal URL missing. Please try again.');
+    }
+  } catch (err) {
+    console.error('[PORTAL] Network error:', err);
+    showError('Network error opening billing portal.');
+  }
+}
+
 // Legacy ID-based handlers (if present)
 if (freePlanBtn) {
   freePlanBtn.addEventListener('click', () => {
@@ -1061,6 +1143,14 @@ planUpgradeButtons.forEach((btn) => {
     startCheckout(plan);
   });
 });
+
+// NEW: Manage billing button click -> open Stripe Billing Portal
+if (manageBillingBtn) {
+  manageBillingBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    openBillingPortal();
+  });
+}
 
 /* ========== Legal Modals: Open/Close Logic ========== */
 

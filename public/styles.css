@@ -1346,3 +1346,10 @@ textarea:focus{
     font-size:11px;
   }
 }
+
+/* Stripe Billing Portal: "Manage billing" button */
+#manageBillingBtn{
+  border-radius:var(--radius-pill);
+  padding:6px 10px;
+  font-size:10px;
+}

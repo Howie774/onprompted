@@ -171,7 +171,6 @@ app.post(
             usedInputs: 0,
           };
 
-          // only set if present, avoid undefined bug
           if (subscription.current_period_start) {
             updateData.periodStart = subscription.current_period_start;
           }
@@ -345,6 +344,90 @@ app.post(
       return res.json({ url: session.url });
     } catch (err) {
       console.error('[CHECKOUT][API] Error creating checkout session:', err);
+      return res.status(500).json({ error: 'server_error' });
+    }
+  }
+);
+
+/* ========== STRIPE BILLING PORTAL ========== */
+/*
+   Allows a logged-in user to open Stripe’s hosted billing portal to:
+   - update card
+   - upgrade/downgrade plans
+   - cancel subscription
+
+   We:
+   - look up stripeCustomerId from Firestore
+   - create one if missing
+   - ensure metadata.firebaseUid is set
+   - return portal session URL
+*/
+app.post(
+  '/api/billing/create-portal-session',
+  requireAuth,
+  async (req, res) => {
+    try {
+      const firebaseUid = req.user.uid;
+      const email = req.user.email || undefined;
+
+      const baseUrl =
+        process.env.PUBLIC_BASE_URL || `https://${req.headers.host}`;
+
+      const userRef = db.collection('users').doc(firebaseUid);
+      const userSnap = await userRef.get();
+      const userData = userSnap.exists ? userSnap.data() || {} : {};
+
+      let stripeCustomerId = userData.stripeCustomerId;
+      let customer;
+
+      if (stripeCustomerId) {
+        console.log(
+          '[PORTAL][API] Using existing Stripe customer:',
+          stripeCustomerId
+        );
+        customer = await stripe.customers.retrieve(stripeCustomerId);
+
+        // Backfill metadata if needed
+        if (!customer.metadata || !customer.metadata.firebaseUid) {
+          await stripe.customers.update(stripeCustomerId, {
+            metadata: {
+              ...(customer.metadata || {}),
+              firebaseUid,
+            },
+          });
+          console.log(
+            '[PORTAL][API] Backfilled firebaseUid metadata on customer'
+          );
+        }
+      } else {
+        console.log(
+          '[PORTAL][API] No Stripe customer found, creating one for portal access'
+        );
+        customer = await stripe.customers.create({
+          email,
+          metadata: { firebaseUid },
+        });
+        stripeCustomerId = customer.id;
+        await userRef.set({ stripeCustomerId }, { merge: true });
+        console.log(
+          '[PORTAL][API] Created Stripe customer:',
+          stripeCustomerId
+        );
+      }
+
+      const session = await stripe.billingPortal.sessions.create({
+        customer: stripeCustomerId,
+        return_url: `${baseUrl}/?billing=portal_return`,
+      });
+
+      console.log(
+        '[PORTAL][API] Created billing portal session:',
+        session.id
+      );
+
+      return res.json({ url: session.url });
+    } catch (err) {
+      console.error('[PORTAL][API] Error creating portal session:', err);
       return res.status(500).json({ error: 'server_error' });
     }
   }
