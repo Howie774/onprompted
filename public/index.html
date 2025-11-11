@@ -1,4 +1,4 @@
-<!doctype html>
+<!doctype html> 
 <html lang="en">
 <head>
   <meta charset="utf-8" />
@@ -64,7 +64,13 @@
       <button id="authCloseBtn" class="auth-close">×</button>
 
       <p class="auth-note">
-        We use your account only to store your prompts securely. No sharing, no spam.
+        By creating an account or signing in, you agree to our
+        <button type="button" class="inline-link" id="authTermsLink">Terms of Use</button>
+        and acknowledge our
+        <button type="button" class="inline-link" id="authPrivacyLink">Privacy Policy</button>.
+      </p>
+      <p class="auth-note">
+        We use your account to store your prompts securely in Firebase. No resale of your inputs or outputs.
       </p>
     </div>
   </div>
@@ -331,11 +337,138 @@
   <footer class="foot">
     <span>© <span id="year"></span> Mordafry LLC</span>
     <nav class="foot-links">
-      <a href="#" class="link">Privacy</a>
+      <a href="#" class="link" id="footerPrivacyLink">Privacy</a>
       <span>•</span>
-      <a href="#" class="link">Terms</a>
+      <a href="#" class="link" id="footerTermsLink">Terms</a>
     </nav>
   </footer>
+
+  <!-- LEGAL MODALS -->
+
+  <!-- Privacy Policy Modal -->
+  <div id="privacyModal" class="legal-modal-backdrop" style="display:none;">
+    <div class="legal-modal">
+      <button class="legal-close" data-close="privacyModal">×</button>
+      <h2>Privacy Policy</h2>
+      <p><strong>Last updated:</strong> [Update this date when you change it]</p>
+      <p>
+        OnPrompted is operated by Mordafry LLC (“we”, “us”, “our”). This Privacy Policy explains how we
+        collect, use, and protect information when you use OnPrompted.
+      </p>
+      <h3>What we collect</h3>
+      <ul>
+        <li><strong>Account data:</strong> Email address and basic profile info when you sign up or sign in (including via Google).</li>
+        <li><strong>Authentication data:</strong> Hashed credentials and tokens managed through Firebase Authentication.</li>
+        <li><strong>Prompt data:</strong> The text you paste, related context, and generated optimized prompts you choose to save.</li>
+        <li><strong>Usage & billing data:</strong> Plan, usage counts, and limited payment metadata via Stripe (we do not store full card numbers).</li>
+        <li><strong>Technical data:</strong> Basic logs (IP address, device, browser) for security, abuse prevention, and reliability.</li>
+      </ul>
+      <h3>How we use it</h3>
+      <ul>
+        <li>To provide and improve the OnPrompted service and your prompt history.</li>
+        <li>To enforce input limits, subscriptions, and account security.</li>
+        <li>To process payments via trusted third parties (e.g., Stripe).</li>
+        <li>To send essential service emails (account, billing, security). No spammy blasts.</li>
+      </ul>
+      <h3>AI & third-party services</h3>
+      <p>
+        We use large language model providers (for example, OpenAI or similar APIs) to transform your inputs into optimized prompts.
+        Your inputs and outputs may be sent to these providers solely to generate results and maintain service quality.
+        We do not sell your prompts or outputs.
+      </p>
+      <p>
+        We use Firebase (Google) for authentication and data storage, and Stripe for payments. These providers process data
+        under their own terms and privacy policies.
+      </p>
+      <h3>Data retention & control</h3>
+      <ul>
+        <li>You can request deletion of your account and associated prompt history by contacting us.</li>
+        <li>We may retain minimal records as required for security, accounting, or legal obligations.</li>
+      </ul>
+      <h3>Security</h3>
+      <p>
+        We take reasonable measures to protect your data, but no system can be perfectly secure. You are responsible
+        for maintaining the confidentiality of your login credentials.
+      </p>
+      <h3>Contact</h3>
+      <p>
+        For any privacy questions or requests, contact Mordafry LLC at the email listed on the OnPrompted site.
+      </p>
+      <p class="legal-note">
+        This summary is provided for clarity and does not replace formal legal advice. You should review and adapt this policy
+        with a qualified attorney for your specific use case.
+      </p>
+    </div>
+  </div>
+
+  <!-- Terms of Use Modal -->
+  <div id="termsModal" class="legal-modal-backdrop" style="display:none;">
+    <div class="legal-modal">
+      <button class="legal-close" data-close="termsModal">×</button>
+      <h2>Terms of Use</h2>
+      <p><strong>Last updated:</strong> [Update this date when you change it]</p>
+      <p>
+        These Terms of Use (“Terms”) govern your access to and use of OnPrompted, operated by Mordafry LLC (“we”, “us”, “our”).
+        By creating an account, signing in, or using the product, you agree to these Terms.
+      </p>
+      <h3>Service description</h3>
+      <p>
+        OnPrompted helps you turn rough ideas into structured prompts for use with AI systems. We do not run those external AI
+        models for you; we generate prompt text you can use in services like ChatGPT, Claude, Gemini, or your own stack.
+      </p>
+      <h3>Accounts & eligibility</h3>
+      <ul>
+        <li>You must provide accurate information and keep your account secure.</li>
+        <li>You are responsible for all activity under your account.</li>
+        <li>We may suspend or terminate accounts for abuse, illegal use, or violations of these Terms.</li>
+      </ul>
+      <h3>Acceptable use</h3>
+      <ul>
+        <li>No use of OnPrompted for illegal, harmful, or abusive activities.</li>
+        <li>No attempts to bypass quotas, scrape, reverse engineer, or attack the service.</li>
+        <li>No uploading of sensitive personal data or regulated information that you are not authorized to share.</li>
+      </ul>
+      <h3>AI outputs & no guarantees</h3>
+      <p>
+        Prompts and suggestions generated by OnPrompted are produced with the help of third-party AI systems and may be incorrect,
+        incomplete, or unsuitable for your specific context.
+      </p>
+      <p>
+        <strong>Mordafry LLC does not provide legal, financial, medical, or other professional advice</strong>, and
+        is not responsible for how you or your clients use any prompts or resulting content.
+        You are solely responsible for reviewing outputs before using them.
+      </p>
+      <h3>Subscriptions & billing</h3>
+      <ul>
+        <li>Free and paid tiers may have different limits and features as shown on the site.</li>
+        <li>Paid plans are processed via Stripe or similar providers; billing terms are shown at checkout.</li>
+        <li>We may change pricing or plan limits with notice on the site or via email where appropriate.</li>
+      </ul>
+      <h3>Third-party services</h3>
+      <p>
+        OnPrompted integrates with third-party providers (including Firebase, LLM APIs, and Stripe).
+        We are not liable for downtime, data loss, or issues caused by those providers.
+      </p>
+      <h3>Limitation of liability</h3>
+      <p>
+        To the maximum extent permitted by law, OnPrompted and Mordafry LLC are not liable for any indirect, incidental,
+        consequential, or special damages, or for loss of profits, revenue, or data arising from your use of the service.
+      </p>
+      <h3>Changes to these Terms</h3>
+      <p>
+        We may update these Terms from time to time. Continued use of OnPrompted after changes become effective
+        means you accept the updated Terms.
+      </p>
+      <h3>Contact</h3>
+      <p>
+        For questions about these Terms, contact Mordafry LLC using the contact details provided on the site.
+      </p>
+      <p class="legal-note">
+        These Terms are a starting point and should be reviewed and customized with a qualified attorney
+        to ensure compliance with your specific business and jurisdiction.
+      </p>
+    </div>
+  </div>
 
   <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>

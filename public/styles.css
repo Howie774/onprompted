@@ -1223,3 +1223,126 @@ textarea:focus{
     font-size:12px;
   }
 }
+
+/* ========== LEGAL MODALS & INLINE LINKS ========== */
+
+/* Inline links inside auth text (Terms/Privacy) */
+.inline-link{
+  background:none;
+  border:none;
+  padding:0;
+  margin:0 2px;
+  font-size:10px;
+  color:var(--brand2);
+  text-decoration:underline;
+  text-decoration-thickness:0.06em;
+  text-underline-offset:2px;
+  cursor:pointer;
+}
+.inline-link:hover{
+  color:var(--accent-warm);
+}
+
+/* Backdrop for legal modals */
+.legal-modal-backdrop{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.7);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:80;
+}
+
+/* Modal container */
+.legal-modal{
+  width:min(720px,96vw);
+  max-height:82vh;
+  padding:22px 22px 16px;
+  border-radius:24px;
+  background:
+    radial-gradient(260px 260px at 0% 0%, rgba(124,92,255,.14), transparent),
+    radial-gradient(260px 260px at 100% 0%, rgba(255,184,107,.10), transparent),
+    #05070a;
+  border:1px solid rgba(69,82,104,.95);
+  box-shadow:0 30px 80px rgba(0,0,0,.95);
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  overflow-y:auto;
+}
+
+/* Close button (top-right “×”) */
+.legal-close{
+  position:absolute;
+  top:10px;
+  right:12px;
+  width:22px;
+  height:22px;
+  border-radius:999px;
+  border:none;
+  background:rgba(9,11,16,.98);
+  color:var(--muted);
+  font-size:16px;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition:all .16s ease;
+}
+.legal-close:hover{
+  background:rgba(124,92,255,.22);
+  color:#fff;
+}
+
+/* Legal text styles */
+.legal-modal h2{
+  margin:0 0 4px;
+  font-size:20px;
+  font-weight:700;
+  letter-spacing:-0.01em;
+}
+
+.legal-modal h3{
+  margin:10px 0 4px;
+  font-size:14px;
+  font-weight:600;
+  color:var(--accent-warm);
+}
+
+.legal-modal p{
+  margin:0 0 6px;
+  font-size:12px;
+  color:var(--muted);
+  line-height:1.7;
+}
+
+.legal-modal ul{
+  margin:0 0 8px 16px;
+  padding:0;
+  font-size:12px;
+  color:var(--muted);
+  line-height:1.7;
+}
+
+.legal-note{
+  font-size:10px;
+  color:var(--muted);
+  opacity:.9;
+  margin-top:4px;
+}
+
+/* Mobile tweaks */
+@media (max-width:600px){
+  .legal-modal{
+    padding:18px 14px 14px;
+    border-radius:18px;
+  }
+  .legal-modal h2{
+    font-size:18px;
+  }
+  .legal-modal p,
+  .legal-modal ul{
+    font-size:11px;
+  }
+}

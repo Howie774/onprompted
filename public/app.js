@@ -1062,6 +1062,83 @@ planUpgradeButtons.forEach((btn) => {
   });
 });
 
+/* ========== Legal Modals: Open/Close Logic ========== */
+
+const privacyModal = document.getElementById('privacyModal');
+const termsModal = document.getElementById('termsModal');
+
+const footerPrivacyLink = document.getElementById('footerPrivacyLink');
+const footerTermsLink = document.getElementById('footerTermsLink');
+
+const authTermsLink = document.getElementById('authTermsLink');
+const authPrivacyLink = document.getElementById('authPrivacyLink');
+
+function openLegalModal(modal) {
+  if (!modal) return;
+  modal.style.display = 'flex';
+}
+
+function closeLegalModalById(id) {
+  const modal = document.getElementById(id);
+  if (!modal) return;
+  modal.style.display = 'none';
+}
+
+// Footer links
+if (footerPrivacyLink && privacyModal) {
+  footerPrivacyLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    openLegalModal(privacyModal);
+  });
+}
+if (footerTermsLink && termsModal) {
+  footerTermsLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    openLegalModal(termsModal);
+  });
+}
+
+// Auth modal inline links
+if (authPrivacyLink && privacyModal) {
+  authPrivacyLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    openLegalModal(privacyModal);
+  });
+}
+if (authTermsLink && termsModal) {
+  authTermsLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    openLegalModal(termsModal);
+  });
+}
+
+// Close buttons inside legal modals
+document.querySelectorAll('.legal-close').forEach((btn) => {
+  btn.addEventListener('click', (e) => {
+    e.preventDefault();
+    const targetId = btn.dataset.close;
+    if (targetId) {
+      closeLegalModalById(targetId);
+    }
+  });
+});
+
+// Click on backdrop to close
+if (privacyModal) {
+  privacyModal.addEventListener('click', (e) => {
+    if (e.target === privacyModal) {
+      closeLegalModalById('privacyModal');
+    }
+  });
+}
+if (termsModal) {
+  termsModal.addEventListener('click', (e) => {
+    if (e.target === termsModal) {
+      closeLegalModalById('termsModal');
+    }
+  });
+}
+
 /* ========== Echo test (optional) ========== */
 
 (async function pingEcho() {
