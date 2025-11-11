@@ -1,6 +1,7 @@
 {
   "name": "onprompted",
   "version": "1.0.0",
+  "type": "module",
   "main": "server.js",
   "description": "OnPrompted MVP (Express serving /public)",
   "scripts": {

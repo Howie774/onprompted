@@ -1,4 +1,4 @@
-// promptEngineRouter.js 
+// promptEngineRouter.js
 import express from 'express';
 import OpenAI from 'openai';
 import admin from 'firebase-admin';
@@ -9,75 +9,114 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Firestore (from firebase-admin, already initialized in server.js)
-const db = admin.firestore();
-
-// Simple per-plan monthly input limits
-const PLAN_LIMITS = {
-  free: 10,          // 10 inputs/month for signed-up users
-  starter_0_99: 50,  // $0.99
-  pro_8_99: 500,     // $8.99
-  agency_19_99: 5000 // $19.99 agency plan (team)
-};
-
-function resolvePlanLimit(usageData) {
-  if (!usageData) return PLAN_LIMITS.free;
-  if (typeof usageData.limit === 'number') return usageData.limit;
-
-  const plan = usageData.plan || 'free';
-  return PLAN_LIMITS[plan] || PLAN_LIMITS.free;
+/**
+ * IMPORTANT:
+ * Do NOT call admin.firestore() at top-level assuming initializeApp()
+ * already ran. server.js imports this file BEFORE it calls initializeApp().
+ * So we lazily grab/init here when first needed.
+ */
+function getDb() {
+  if (!admin.apps.length) {
+    // Fallback: initialize if not already done (useful for local/dev or tests).
+    // In production on Render, server.js already called initializeApp()
+    // with applicationDefault() so this will usually be skipped.
+    admin.initializeApp({
+      credential: admin.credential.applicationDefault(),
+    });
+  }
+  return admin.firestore();
 }
 
-// Ensure each user has a usage doc; reset monthly window when needed
-async function getOrInitUsage(uid) {
-  const ref = db.collection('usage').doc(uid);
+/* ---------- PLAN & USAGE CONFIG ---------- */
+
+const PLAN_LIMITS = {
+  free: 10,       // 10 inputs / month
+  starter: 50,    // 50 inputs / month
+  pro: 500,       // 500 inputs / month
+  agency: 5000,   // teams (placeholder high cap)
+};
+
+const BILLING_WINDOW_MS = 30 * 24 * 60 * 60 * 1000; // simple 30-day rolling window
+
+async function getUserPlanAndUsage(uid) {
+  const db = getDb();
+  const ref = db.collection('users').doc(uid);
   const snap = await ref.get();
+
   const now = new Date();
 
   if (!snap.exists) {
-    const initial = {
+    // Brand new user: free plan, 0 usage, start now
+    return {
+      ref,
       plan: 'free',
-      used: 0,
-      periodStart: now.toISOString()
+      limit: PLAN_LIMITS.free,
+      usage: 0,
+      cycleStart: now,
+      shouldReset: true,
     };
-    await ref.set(initial);
-    return { ref, data: initial };
   }
 
   const data = snap.data() || {};
-  let updated = { ...data };
+  const plan = data.plan || 'free';
+  const limit = PLAN_LIMITS[plan] ?? PLAN_LIMITS.free;
 
-  const periodStart = data.periodStart ? new Date(data.periodStart) : null;
-  if (!periodStart || isNaN(periodStart.getTime())) {
-    // Fix bad/missing periodStart
-    updated.periodStart = now.toISOString();
-    if (typeof updated.used !== 'number') updated.used = 0;
-  } else {
-    // Reset if more than 1 month old
-    const nextReset = new Date(periodStart);
-    nextReset.setMonth(nextReset.getMonth() + 1);
-    if (now >= nextReset) {
-      updated.periodStart = now.toISOString();
-      updated.used = 0;
-    }
+  let usage = data.usage ?? 0;
+  let cycleStart = data.cycleStart
+    ? (data.cycleStart.toDate ? data.cycleStart.toDate() : new Date(data.cycleStart))
+    : null;
+
+  let shouldReset = false;
+
+  if (!cycleStart || (now - cycleStart) > BILLING_WINDOW_MS) {
+    usage = 0;
+    cycleStart = now;
+    shouldReset = true;
   }
 
-  // Persist any corrections/resets
-  if (JSON.stringify(updated) !== JSON.stringify(data)) {
-    await ref.set(updated, { merge: true });
-  }
-
-  return { ref, data: updated };
+  return { ref, plan, limit, usage, cycleStart, shouldReset };
 }
 
-async function incrementUsage(ref) {
-  try {
-    await ref.update({
-      used: admin.firestore.FieldValue.increment(1)
-    });
-  } catch (err) {
-    console.error('Error incrementing usage:', err);
-  }
+async function incrementUsage(uid, count) {
+  const db = getDb();
+  const ref = db.collection('users').doc(uid);
+  const now = new Date();
+
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+
+    if (!snap.exists) {
+      tx.set(ref, {
+        plan: 'free',
+        usage: count,
+        cycleStart: now,
+      }, { merge: true });
+      return;
+    }
+
+    const data = snap.data() || {};
+    const plan = data.plan || 'free';
+    const limit = PLAN_LIMITS[plan] ?? PLAN_LIMITS.free;
+
+    let usage = data.usage ?? 0;
+    let cycleStart = data.cycleStart
+      ? (data.cycleStart.toDate ? data.cycleStart.toDate() : new Date(data.cycleStart))
+      : now;
+
+    if (!cycleStart || (now - cycleStart) > BILLING_WINDOW_MS) {
+      usage = 0;
+      cycleStart = now;
+    }
+
+    usage += count;
+
+    tx.set(ref, {
+      plan,
+      usage,
+      cycleStart,
+      limit, // optional: stored for debugging/insights
+    }, { merge: true });
+  });
 }
 
 const SYSTEM_PROMPT = `
@@ -329,16 +368,16 @@ FORMAT REQUIREMENTS (CRITICAL)
 
 router.post('/engineer-prompt', async (req, res) => {
   try {
-    // 🔐 Require authenticated user (Firebase ID token already verified in middleware)
+    const { goal, category, extraContext, clarificationAnswers } = req.body || {};
+
+    // Require authenticated user (Firebase ID token verified in server.js -> attachFirebaseUser)
     if (!req.user || !req.user.uid) {
       return res.status(401).json({
         error: 'Sign in required',
-        message: 'Create a free OnPrompted account to get 10 optimized prompt inputs per month.',
-        requireAuth: true,
+        code: 'AUTH_REQUIRED',
+        message: 'Create a free account or sign in to use OnPrompted. Free accounts include 10 prompt inputs per month.',
       });
     }
-
-    const { goal, category, extraContext, clarificationAnswers } = req.body || {};
 
     if (!goal || typeof goal !== 'string') {
       return res.status(400).json({
@@ -346,16 +385,16 @@ router.post('/engineer-prompt', async (req, res) => {
       });
     }
 
-    // 🔢 Per-user usage & plan check (each call = 1 input)
-    const { ref: usageRef, data: usageData } = await getOrInitUsage(req.user.uid);
-    const limit = resolvePlanLimit(usageData);
+    const uid = req.user.uid;
 
-    if (typeof usageData.used === 'number' && usageData.used >= limit) {
+    // Fetch plan & usage and enforce limit BEFORE calling OpenAI
+    const { plan, limit, usage, shouldReset } = await getUserPlanAndUsage(uid);
+
+    if (usage >= limit) {
       return res.status(402).json({
-        error: 'You have reached your monthly prompt input limit for your current plan.',
-        used: usageData.used,
-        limit,
-        upgrade: true,
+        error: 'Limit reached',
+        code: 'LIMIT_REACHED',
+        message: `You have used your ${limit} prompt inputs for this cycle on the ${plan} plan. Upgrade to continue.`,
       });
     }
 
@@ -411,6 +450,7 @@ If the request IS already fully clear, specific, and well-scoped:
   }
       `.trim();
 
+    // Call OpenAI
     const response = await openai.responses.create({
       model: 'gpt-4.1-mini',
       input: [
@@ -419,7 +459,7 @@ If the request IS already fully clear, specific, and well-scoped:
       ],
     });
 
-    const raw = response.output[0].content[0].text || '{}';
+    const raw = response.output[0]?.content?.[0]?.text || '{}';
 
     let parsed;
     try {
@@ -432,12 +472,12 @@ If the request IS already fully clear, specific, and well-scoped:
       });
     }
 
-    // If we get here, count this as one used input (clarification or final)
-    await incrementUsage(usageRef);
+    // At this point, we successfully consumed ONE input => increment usage
+    await incrementUsage(uid, 1);
 
-    // Basic sanity: enforce allowed shapes
+    // Enforce allowed response shapes
     if (parsed.status === 'needs_clarification') {
-      if (!Array.isArray(parsed.questions) || parsed.questions.length === 0) {
+      if (!Array.isArray(parsed.questions) || !parsed.questions.length) {
         return res.status(502).json({
           error: 'Model indicated needs_clarification without valid questions.',
           details: parsed,
@@ -456,7 +496,7 @@ If the request IS already fully clear, specific, and well-scoped:
       });
     }
 
-    // Fallback if model misbehaves but at least has final_prompt
+    // Fallback if model misbehaves but at least returned final_prompt
     if (typeof parsed.final_prompt === 'string') {
       return res.json({
         status: 'ready',
