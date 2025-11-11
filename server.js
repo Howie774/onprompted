@@ -11,15 +11,37 @@ import promptEngineRouter from './promptEngineRouter.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Initialize Firebase Admin
+/* ========== FIREBASE ADMIN INIT ========== */
+
 if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.applicationDefault(),
-  });
+  if (
+    process.env.FIREBASE_PROJECT_ID &&
+    process.env.FIREBASE_CLIENT_EMAIL &&
+    process.env.FIREBASE_PRIVATE_KEY
+  ) {
+    console.log('[FIREBASE] Initializing with service account env vars');
+    admin.initializeApp({
+      credential: admin.credential.cert({
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        // handle escaped newlines
+        privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+      }),
+    });
+  } else {
+    console.log(
+      '[FIREBASE] Missing service account env vars, falling back to applicationDefault()'
+    );
+    admin.initializeApp({
+      credential: admin.credential.applicationDefault(),
+    });
+  }
 }
+
 const db = admin.firestore();
 
-// Initialize Stripe
+/* ========== STRIPE INIT ========== */
+
 if (!process.env.STRIPE_SECRET_KEY) {
   console.error('[STRIPE] Missing STRIPE_SECRET_KEY env var');
 }
@@ -27,26 +49,23 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: '2024-06-20',
 });
 
-// Express app
+/* ========== EXPRESS APP ========== */
+
 const app = express();
 app.use(cors());
 
-// Use JSON/body parsing for all routes EXCEPT the Stripe webhook
+// JSON/body parsing for all routes EXCEPT Stripe webhook
 app.use((req, res, next) => {
-  if (req.originalUrl === '/api/stripe-webhook') {
-    return next();
-  }
+  if (req.originalUrl === '/api/stripe-webhook') return next();
   return express.json()(req, res, next);
 });
 
 app.use((req, res, next) => {
-  if (req.originalUrl === '/api/stripe-webhook') {
-    return next();
-  }
+  if (req.originalUrl === '/api/stripe-webhook') return next();
   return express.urlencoded({ extended: true })(req, res, next);
 });
 
-// Serve your front-end from /public
+// Static frontend
 app.use(express.static(path.join(__dirname, 'public')));
 
 /* ========== STRIPE WEBHOOK ========== */
@@ -58,7 +77,7 @@ app.post(
     const sig = req.headers['stripe-signature'];
 
     if (!process.env.STRIPE_WEBHOOK_SECRET) {
-      console.error('[WEBHOOK] Missing STRIPE_WEBHOOK_SECRET env var');
+      console.error('[WEBHOOK] Missing STRIPE_WEBHOOK_SECRET');
       return res.status(500).send('Webhook not configured');
     }
 
@@ -77,7 +96,7 @@ app.post(
     console.log('[WEBHOOK] Event received:', event.type);
 
     try {
-      // 1) Link checkout.session to user (customer id + subscription id)
+      // 1) Checkout completed → store customer + subscription id
       if (event.type === 'checkout.session.completed') {
         const session = event.data.object;
         console.log('[WEBHOOK] checkout.session.completed:', session.id);
@@ -96,22 +115,18 @@ app.post(
               },
               { merge: true }
             );
-
           console.log(
             `[WEBHOOK] Linked checkout session to user: ${firebaseUid}`
           );
         } else {
           console.warn(
             '[WEBHOOK] checkout.session.completed missing firebaseUid or customer',
-            {
-              firebaseUid,
-              customer: session.customer,
-            }
+            { firebaseUid, customer: session.customer }
           );
         }
       }
 
-      // 2) Create / update subscription → set plan + limits
+      // 2) Subscription created/updated → compute plan/quota & write
       if (
         event.type === 'customer.subscription.created' ||
         event.type === 'customer.subscription.updated'
@@ -139,7 +154,6 @@ app.post(
           quota = 5000;
         }
 
-        // Look up Firebase UID from Stripe Customer metadata
         const customer = await stripe.customers.retrieve(customerId);
         const firebaseUid = customer.metadata?.firebaseUid;
 
@@ -157,9 +171,8 @@ app.post(
             usedInputs: 0,
           };
 
-          // Guard against undefined (the previous bug)
+          // only set if present, avoid undefined bug
           if (subscription.current_period_start) {
-            // Store as seconds or ms; here keep raw seconds for simplicity
             updateData.periodStart = subscription.current_period_start;
           }
 
@@ -174,7 +187,7 @@ app.post(
         }
       }
 
-      // 3) Downgrade on cancel
+      // 3) Subscription deleted → downgrade
       if (event.type === 'customer.subscription.deleted') {
         const subscription = event.data.object;
         console.log(
@@ -198,7 +211,6 @@ app.post(
               },
               { merge: true }
             );
-
           console.log(
             `[WEBHOOK] Downgraded user ${firebaseUid} to free plan`
           );
@@ -338,11 +350,9 @@ app.post(
   }
 );
 
-/* ========== PROMPT ENGINE API ========== */
+/* ========== PROMPT ENGINE / UTIL ROUTES ========== */
 
 app.use('/api', promptEngineRouter);
-
-/* ========== ECHO / HEALTH ========== */
 
 app.post('/api/echo', (req, res) => {
   const { text } = req.body || {};
@@ -356,7 +366,7 @@ app.post('/api/echo', (req, res) => {
 
 app.get('/healthz', (_req, res) => res.send('ok'));
 
-/* ========== SERVER START ========== */
+/* ========== START SERVER ========== */
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
