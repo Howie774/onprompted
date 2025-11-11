@@ -948,7 +948,7 @@ textarea{
 /* When sidebar is active on desktop, shift main content so nothing sits under it */
 @media (min-width:860px){
   body.sidebar-active .top{
-    margin-left:280px;
+    margin-left:310px;
     margin-right:auto;
   }
 
@@ -956,11 +956,11 @@ textarea{
   body.sidebar-active .how.container,
   body.sidebar-active .examples.container,
   body.sidebar-active .pricing-note.container{
-    margin-left:280px;
+    margin-left:310px;
   }
 
   body.sidebar-active .foot{
-    margin-left:280px;
+    margin-left:310px;
     margin-right:auto;
   }
 }
