@@ -3,6 +3,11 @@ const beginBtn = document.getElementById('begin');
 const chat = document.getElementById('chat');
 const copyBtn = document.getElementById('copyPrompt');
 
+// Capture initial example bubble so we can restore it on "New prompt"
+const initialExampleBubble = chat
+  ? chat.querySelector('.bubble.ai.example')?.cloneNode(true)
+  : null;
+
 // Auth elements
 const loginOpenBtn = document.getElementById('loginOpenBtn');
 const logoutBtn = document.getElementById('logoutBtn');
@@ -23,6 +28,8 @@ const accountSidebarPrompts = document.getElementById('accountSidebarPrompts');
 const accountSidebarPlan = document.getElementById('accountSidebarPlan');
 const accountSidebarUsage = document.getElementById('accountSidebarUsage');
 
+let newPromptBtn = null;
+
 // Pricing buttons (legacy IDs, kept)
 const freePlanBtn = document.getElementById('freePlanBtn');
 const starterPlanBtn = document.getElementById('starterPlanBtn');
@@ -32,7 +39,67 @@ const agencyPlanBtn = document.getElementById('agencyPlanBtn');
 let currentUser = null;
 let currentIdToken = null; // sent to /api routes
 
+// In-memory prompt history for sidebar navigation
+let promptHistory = [];
+let activePromptId = null;
+let editingPromptId = null;
+
 document.getElementById('year').textContent = new Date().getFullYear();
+
+/* ========== Sidebar + Layout Helpers ========== */
+
+function setSidebarVisibility(visible) {
+  if (!accountSidebar) return;
+
+  if (visible) {
+    accountSidebar.style.display = 'flex';
+    document.body.classList.add('sidebar-active');
+    ensureNewPromptButton();
+  } else {
+    accountSidebar.style.display = 'none';
+    document.body.classList.remove('sidebar-active');
+  }
+}
+
+function ensureNewPromptButton() {
+  if (!accountSidebar || newPromptBtn) return;
+  const header = accountSidebar.querySelector('.account-sidebar-header');
+  if (!header) return;
+
+  newPromptBtn = document.createElement('button');
+  newPromptBtn.id = 'newPromptBtn';
+  // Reuse existing pill style so it matches the UI
+  newPromptBtn.className = 'plan-upgrade-btn account-new-prompt-btn';
+  newPromptBtn.type = 'button';
+  newPromptBtn.textContent = 'New prompt';
+  newPromptBtn.addEventListener('click', () => {
+    startNewPromptSession();
+  });
+
+  header.appendChild(newPromptBtn);
+}
+
+/* Reset chat area back to just the example bubble */
+function resetChatToExample() {
+  if (!chat) return;
+  chat.innerHTML = '';
+  if (initialExampleBubble) {
+    chat.appendChild(initialExampleBubble.cloneNode(true));
+  }
+}
+
+/* Start a brand new prompt session (used by New prompt button) */
+function startNewPromptSession() {
+  activePromptId = null;
+  pendingGoal = null;
+  setAnswerMode(false);
+  if (ideaEl) {
+    ideaEl.value = '';
+  }
+  resetChatToExample();
+}
+
+/* ========== UI Helpers ========== */
 
 document.getElementById('chips').addEventListener('click', (e) => {
   const ex = e.target.closest('.chip')?.dataset.example;
@@ -42,6 +109,7 @@ document.getElementById('chips').addEventListener('click', (e) => {
 });
 
 function addBubble(html, who = 'ai') {
+  if (!chat) return null;
   const b = document.createElement('div');
   b.className = `bubble ${who}`;
   b.innerHTML = html;
@@ -54,6 +122,20 @@ function escapeHtml(s) {
   return s.replace(/[&<>\"']/g, (c) =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])
   );
+}
+
+/* Build a short, automatic title for sidebar prompt chips */
+function buildPromptTitle({ goal, finalPrompt }) {
+  const src = (goal || finalPrompt || '').trim();
+  if (!src) return 'Untitled prompt';
+
+  const clean = src
+    .replace(/\s+/g, ' ')
+    .replace(/["“”]+/g, '')
+    .slice(0, 60)
+    .trim();
+
+  return clean.length ? (clean.length < 60 ? clean : clean + '…') : 'Untitled prompt';
 }
 
 /* ========== Shared API Error Handling for Prompt Engine ========== */
@@ -291,17 +373,24 @@ async function savePromptToHistory({
       .doc(currentUser.uid)
       .collection('prompts');
 
-    await ref.add({
+    const title = buildPromptTitle({ goal, finalPrompt });
+
+    const docRef = await ref.add({
       goal: goal || null,
       clarificationAnswers: clarificationAnswers || null,
       finalPrompt,
+      title,
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
     });
+
+    console.log('[PROMPT] Saved prompt history with id:', docRef.id);
+    await loadPromptHistory();
   } catch (err) {
     console.error('Error saving prompt history:', err);
   }
 }
 
+/* Render history sidebar as compact, clickable prompt tabs */
 function renderSidebarHistory(docs) {
   if (
     !accountSidebar ||
@@ -309,66 +398,183 @@ function renderSidebarHistory(docs) {
     !accountSidebarEmail
   )
     return;
+
   if (!currentUser) {
-    accountSidebar.style.display = 'none';
+    setSidebarVisibility(false);
     return;
   }
 
   accountSidebarEmail.textContent = currentUser.email || '';
   accountSidebarPrompts.innerHTML = '';
 
-  docs.slice(-6).forEach((item) => {
-    if (!item.finalPrompt) return;
-    const li = document.createElement('li');
-    const preview = item.goal || item.finalPrompt;
-    li.textContent = preview.trim().slice(0, 220);
-    accountSidebarPrompts.appendChild(li);
-  });
+  ensureNewPromptButton();
 
-  accountSidebar.style.display = 'flex';
+  if (!docs || docs.length === 0) {
+    // Show empty state but keep sidebar visible + New prompt button
+    setSidebarVisibility(true);
+    return;
+  }
+
+  // Most recent first in sidebar (short names only)
+  docs
+    .slice()
+    .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0))
+    .reverse()
+    .forEach((item) => {
+      const title =
+        (typeof item.title === 'string' && item.title.trim()) ||
+        buildPromptTitle(item);
+
+      const li = document.createElement('li');
+      li.dataset.id = item.id;
+
+      const titleSpan = document.createElement('span');
+      titleSpan.className = 'prompt-title';
+      titleSpan.textContent = title;
+      li.appendChild(titleSpan);
+
+      // Click: load that prompt into main chat (view past prompt)
+      li.addEventListener('click', (e) => {
+        // Avoid triggering when editing the title
+        if (editingPromptId) return;
+        if (titleSpan.isContentEditable) return;
+        e.preventDefault();
+        openPromptFromHistory(item.id);
+      });
+
+      // Double-click: rename
+      titleSpan.addEventListener('dblclick', (e) => {
+        e.stopPropagation();
+        beginEditPromptTitle(item.id, titleSpan);
+      });
+
+      accountSidebarPrompts.appendChild(li);
+    });
+
+  setSidebarVisibility(true);
 }
 
 async function loadPromptHistory() {
   if (!currentUser || !window.firebaseDb) return;
+
   try {
     const ref = window.firebaseDb
       .collection('users')
       .doc(currentUser.uid)
       .collection('prompts')
       .orderBy('createdAt', 'desc')
-      .limit(10);
+      .limit(20);
 
     const snap = await ref.get();
+
     if (snap.empty) {
-      if (accountSidebar) accountSidebar.style.display = 'flex';
+      promptHistory = [];
+      renderSidebarHistory([]);
       return;
     }
 
     const docs = [];
     snap.forEach((d) => docs.push({ id: d.id, ...d.data() }));
-    docs.reverse(); // oldest first
 
-    docs.forEach((item) => {
-      if (item.goal) {
-        addBubble(
-          `<strong>You (past):</strong> ${escapeHtml(item.goal)}`,
-          'user'
-        );
-      }
-      if (item.finalPrompt) {
-        addBubble(
-          `<div><strong>Optimized Prompt (saved):</strong></div>
-           <pre class="prompt-block">${escapeHtml(
-             item.finalPrompt || ''
-           )}</pre>`,
-          'ai'
-        );
-      }
-    });
-
+    promptHistory = docs;
     renderSidebarHistory(docs);
   } catch (err) {
     console.error('Error loading history:', err);
+  }
+}
+
+/* Open a saved prompt (by id) into the main chat */
+function openPromptFromHistory(id) {
+  const item = promptHistory.find((p) => p.id === id);
+  if (!item) return;
+
+  activePromptId = id;
+  pendingGoal = null;
+  setAnswerMode(false);
+  if (!chat) return;
+
+  resetChatToExample();
+
+  if (item.goal) {
+    addBubble(
+      `<strong>You (past):</strong> ${escapeHtml(item.goal)}`,
+      'user'
+    );
+  }
+  if (item.finalPrompt) {
+    addBubble(
+      `<div><strong>Optimized Prompt (saved):</strong></div>
+       <pre class="prompt-block">${escapeHtml(
+         item.finalPrompt || ''
+       )}</pre>`,
+      'ai'
+    );
+  }
+
+  if (ideaEl) ideaEl.value = '';
+}
+
+/* Enable inline renaming of a prompt tab title */
+function beginEditPromptTitle(id, span) {
+  if (!currentUser || !span) return;
+  if (editingPromptId && editingPromptId !== id) return;
+
+  editingPromptId = id;
+  span.contentEditable = 'true';
+  span.spellcheck = false;
+  span.focus();
+
+  // Select all text
+  const range = document.createRange();
+  range.selectNodeContents(span);
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+
+  function finish(e) {
+    if (e.type === 'keydown' && e.key !== 'Enter') return;
+    e.preventDefault();
+
+    span.removeEventListener('blur', finish);
+    span.removeEventListener('keydown', finish);
+
+    span.contentEditable = 'false';
+
+    const raw = span.textContent.trim();
+    const base =
+      promptHistory.find((p) => p.id === id) || {};
+    const newTitle = raw || buildPromptTitle(base);
+
+    span.textContent = newTitle;
+    editingPromptId = null;
+
+    savePromptTitle(id, newTitle);
+  }
+
+  span.addEventListener('blur', finish);
+  span.addEventListener('keydown', finish);
+}
+
+async function savePromptTitle(id, title) {
+  try {
+    // update local cache
+    const idx = promptHistory.findIndex((p) => p.id === id);
+    if (idx !== -1) {
+      promptHistory[idx].title = title;
+    }
+
+    if (!currentUser || !window.firebaseDb || !id) return;
+
+    await window.firebaseDb
+      .collection('users')
+      .doc(currentUser.uid)
+      .collection('prompts')
+      .doc(id)
+      .set({ title }, { merge: true });
+
+    console.log('[PROMPT] Saved updated title for', id);
+  } catch (err) {
+    console.error('[PROMPT] Failed to save title:', err);
   }
 }
 
@@ -396,6 +602,8 @@ window.firebaseAuth.onAuthStateChanged(async (user) => {
       currentIdToken = null;
     }
 
+    // Show sidebar shell immediately; content will fill after history loads
+    setSidebarVisibility(true);
     await loadPromptHistory();
     await fetchAndRenderUserPlan(currentUser.uid);
   } else {
@@ -408,7 +616,9 @@ window.firebaseAuth.onAuthStateChanged(async (user) => {
 
     currentIdToken = null;
     hidePlanUi();
-    if (accountSidebar) accountSidebar.style.display = 'none';
+    setSidebarVisibility(false);
+    promptHistory = [];
+    activePromptId = null;
 
     console.log('[AUTH] No user logged in');
   }
@@ -441,7 +651,9 @@ let awaitingClarifications = false;
 
 function setAnswerMode(on) {
   awaitingClarifications = on;
-  beginBtn.textContent = on ? 'Answer & Generate' : 'Begin';
+  if (!beginBtn || !ideaEl) return;
+
+  beginBtn.textContent = on ? 'Answer & Generate' : 'Optimize prompt';
   if (on) {
     ideaEl.placeholder = 'Type your answers to the questions above…';
   } else {
@@ -452,6 +664,7 @@ function setAnswerMode(on) {
 
 // Initial state
 setAnswerMode(false);
+resetChatToExample();
 
 beginBtn.addEventListener('click', async () => {
   const text = ideaEl.value.trim();

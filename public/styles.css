@@ -22,7 +22,7 @@ html,body{
 body{
   margin:0;
   font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
-  font-size:16px;              /* main base size */
+  font-size:16px;
   line-height:1.6;
   background:
     radial-gradient(1200px 800px at 80% -10%, rgba(124,92,255,.18), transparent 60%),
@@ -37,7 +37,7 @@ body{
   min-height:100vh;
 }
 
-/* Global centered column */
+/* Global */
 main,header,footer{
   width:100%;
 }
@@ -478,7 +478,6 @@ textarea{
   margin-bottom:24px;
 }
 
-/* Row pairs: messy vs optimized */
 .example-pair{
   display:flex;
   flex-wrap:wrap;
@@ -573,7 +572,7 @@ textarea{
   border-bottom-style:solid;
 }
 
-/* ========== RESPONSIVE ========== */
+/* ========== RESPONSIVE (general) ========== */
 
 @media (max-width:860px){
   .input-block{
@@ -644,6 +643,7 @@ textarea{
   opacity:.9;
 }
 
+/* Auth Google */
 .auth-btn-google{
   width:100%;
   justify-content:center;
@@ -656,12 +656,10 @@ textarea{
   font-weight:500;
   box-shadow:0 10px 26px rgba(0,0,0,.7);
 }
-
 .auth-btn-google:hover{
   background:#0b0f16;
   border-color:var(--brand2);
 }
-
 .google-icon{
   width:16px;
   height:16px;
@@ -687,6 +685,7 @@ textarea{
   color:#fff;
 }
 
+/* Header plan pill: slightly larger */
 .auth-user{
   font-size:11px;
   color:var(--muted);
@@ -697,15 +696,15 @@ textarea{
 }
 
 .auth-plan{
-  font-size:10px;
-  padding:4px 9px;
+  font-size:11px;
+  padding:6px 12px;
   border-radius:var(--radius-pill);
   background:rgba(7,9,12,1);
-  border:1px solid rgba(124,92,255,.5);
+  border:1px solid rgba(124,92,255,.6);
   color:var(--brand2);
   display:inline-flex;
   align-items:center;
-  gap:4px;
+  gap:6px;
   white-space:nowrap;
 }
 
@@ -722,9 +721,9 @@ textarea{
 
 /* Modal box */
 .auth-modal{
-  width:min(480px,96vw);
-  padding:24px 22px 18px;
-  border-radius:22px;
+  width:min(520px,96vw); /* slightly larger */
+  padding:26px 24px 20px;
+  border-radius:24px;
   background:
     radial-gradient(220px 220px at 0% 0%, rgba(124,92,255,.16), transparent),
     radial-gradient(220px 220px at 100% 0%, rgba(69,214,182,.10), transparent),
@@ -739,7 +738,7 @@ textarea{
 
 .auth-title{
   margin:0 0 4px;
-  font-size:22px;
+  font-size:24px;
   font-weight:700;
   letter-spacing:-0.01em;
 }
@@ -761,7 +760,7 @@ textarea{
 }
 
 .auth-input{
-  padding:9px 10px;
+  padding:10px 11px;
   border-radius:12px;
   border:1px solid #283343;
   background:#020308;
@@ -862,30 +861,33 @@ textarea{
   margin-top:4px;
 }
 
+/* Bigger, more prominent tier pill */
 .account-sidebar-plan{
-  font-size:10px;
-  padding:4px 9px;
+  font-size:12px;
+  padding:7px 13px;
   border-radius:var(--radius-pill);
-  background:linear-gradient(135deg,rgba(124,92,255,.22),rgba(69,214,182,.12));
-  border:1px solid rgba(124,92,255,.7);
+  background:linear-gradient(135deg,rgba(124,92,255,.24),rgba(69,214,182,.14));
+  border:1px solid rgba(124,92,255,.9);
   color:var(--brand2);
   display:inline-flex;
   align-items:center;
   gap:6px;
+  font-weight:600;
 }
 
 .account-sidebar-plan::before{
   content:"";
-  width:7px;
-  height:7px;
+  width:8px;
+  height:8px;
   border-radius:50%;
   background:var(--brand2);
   box-shadow:0 0 10px var(--brand2);
 }
 
 .account-sidebar-usage{
-  font-size:10px;
+  font-size:11px;
   color:var(--muted);
+  font-weight:500;
 }
 
 .account-sidebar-section{
@@ -909,19 +911,22 @@ textarea{
   overflow-y:auto;
 }
 
+/* history pill (name-only chip style; overflow handled) */
 .account-sidebar-list li{
   padding:7px 8px;
   border-radius:12px;
   background:#05070d;
   border:1px solid rgba(40,51,67,.95);
-  max-height:70px;
+  max-height:40px;
   overflow:hidden;
   text-overflow:ellipsis;
-  display:-webkit-box;
-  -webkit-line-clamp:3;
-  -webkit-box-orient:vertical;
+  white-space:nowrap;
+  display:flex;
+  align-items:center;
+  gap:6px;
   box-shadow:0 10px 26px rgba(0,0,0,.7);
   position:relative;
+  cursor:pointer;
 }
 
 .account-sidebar-list li::before{
@@ -933,7 +938,35 @@ textarea{
   color:rgba(148,163,253,.9);
 }
 
-/* legacy pricing grid (kept) */
+/* Hide sidebar entirely on small screens */
+@media (max-width:860px){
+  .account-sidebar{
+    display:none !important;
+  }
+}
+
+/* When sidebar is active on desktop, shift main content so nothing sits under it */
+@media (min-width:860px){
+  body.sidebar-active .top{
+    margin-left:280px;
+    margin-right:auto;
+  }
+
+  body.sidebar-active .hero.container,
+  body.sidebar-active .how.container,
+  body.sidebar-active .examples.container,
+  body.sidebar-active .pricing-note.container{
+    margin-left:280px;
+  }
+
+  body.sidebar-active .foot{
+    margin-left:280px;
+    margin-right:auto;
+  }
+}
+
+/* ========== LEGACY PRICING GRID (KEPT) ========== */
+
 .pricing-grid{
   display:grid;
   grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
@@ -994,32 +1027,7 @@ textarea{
   box-shadow:0 8px 22px rgba(124,92,255,.35);
 }
 
-/* Hide sidebar on small screens */
-@media (max-width:860px){
-  .account-sidebar{
-    display:none !important;
-  }
-}
-
-/* Shift main content so it doesn't sit under sidebar on large screens */
-@media (min-width:1100px){
-  .hero.container,
-  .how.container,
-  .examples.container,
-  .pricing-note.container{
-    margin-left:260px;
-  }
-  .top{
-    margin-left:260px;
-    margin-right:auto;
-  }
-  .foot{
-    margin-left:260px;
-    margin-right:auto;
-  }
-}
-
-/* ========== NEW: PRICING PLAN CARDS (for .plans-row / .plan-card) ========== */
+/* ========== NEW: PLAN CARDS ========== */
 
 .plans-row{
   display:grid;
@@ -1041,7 +1049,6 @@ textarea{
   overflow:hidden;
 }
 
-/* subtle glow stripe on paid tiers */
 .plan-card:not(:first-child)::before{
   content:"";
   position:absolute;
@@ -1141,7 +1148,6 @@ textarea{
   font-size:11px;
 }
 
-/* Mobile tweaks for pricing */
 @media (max-width:640px){
   .plans-row{
     gap:10px;

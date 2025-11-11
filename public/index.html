@@ -16,7 +16,7 @@
     <!-- Auth controls -->
     <div class="auth-controls">
       <span id="userEmail" class="auth-user" style="display:none;"></span>
-      <!-- New: plan + usage pill in header -->
+      <!-- Plan + usage pill in header -->
       <span id="userPlanLabel" class="auth-plan" style="display:none;"></span>
       <button id="loginOpenBtn" class="auth-btn auth-btn-main">Sign in</button>
       <button id="logoutBtn" class="auth-btn auth-btn-main" style="display:none;">Log out</button>
@@ -28,7 +28,6 @@
         Prompt engine: Live
       </span>
       <a href="#how-it-works" class="top-link">How it works</a>
-      <!-- Removed "Soon" pill -->
       <a href="#pricing" class="top-link top-link-muted">Pricing</a>
     </nav>
   </header>
@@ -60,7 +59,6 @@
           <span class="google-icon"></span>
           <span>Sign in with Google</span>
         </button>
-
       </div>
 
       <button id="authCloseBtn" class="auth-close">×</button>
@@ -133,23 +131,23 @@
           <div class="bubble ai example">
             <div class="example-label">Example output</div>
             <div class="prompt-block">
-              <strong>Role:</strong> You are an email copywriter for a SaaS that helps college students manage deadlines.<br><br>
-              <strong>Goal:</strong><br>
-              - Write a high-converting launch email announcing a new productivity app for students.<br>
-              - Drive clicks to download the app within 24 hours.<br><br>
-              <strong>Audience:</strong><br>
-              - College students (18–24) juggling classes, exams, and side commitments.<br>
-              - Tech-comfortable, easily overwhelmed by long emails.<br><br>
-              <strong>Constraints:</strong><br>
-              - 250–350 words.<br>
-              - Clear subject line (3 options).<br>
-              - Friendly, motivating tone, never scammy or overhyped.<br>
-              - Skimmable formatting with short paragraphs and bolded phrases.<br><br>
-              <strong>Output format:</strong><br>
-              1) Subject line options<br>
-              2) Preview text<br>
-              3) Full email body in markdown<br>
-              4) One-line CTA to close
+<strong>Role:</strong> You are an email copywriter for a SaaS that helps college students manage deadlines.<br><br>
+<strong>Goal:</strong><br>
+- Write a high-converting launch email announcing a new productivity app for students.<br>
+- Drive clicks to download the app within 24 hours.<br><br>
+<strong>Audience:</strong><br>
+- College students (18–24) juggling classes, exams, and side commitments.<br>
+- Tech-comfortable, easily overwhelmed by long emails.<br><br>
+<strong>Constraints:</strong><br>
+- 250–350 words.<br>
+- Clear subject line (3 options).<br>
+- Friendly, motivating tone, never scammy or overhyped.<br>
+- Skimmable formatting with short paragraphs and bolded phrases.<br><br>
+<strong>Output format:</strong><br>
+1) Subject line options<br>
+2) Preview text<br>
+3) Full email body in markdown<br>
+4) One-line CTA to close
             </div>
           </div>
         </div>
@@ -257,7 +255,7 @@
           <div class="plan-price">$0.99 / month</div>
           <ul class="plan-features">
             <li>50 inputs per month</li>
-            <li>For solo builders & creators</li>
+            <li>For solo builders &amp; creators</li>
             <li>Everything in Free</li>
           </ul>
           <button
@@ -275,7 +273,7 @@
           <div class="plan-price">$8.99 / month</div>
           <ul class="plan-features">
             <li>500 inputs per month</li>
-            <li>For power users & agencies</li>
+            <li>For power users &amp; agencies</li>
             <li>Priority processing</li>
           </ul>
           <button
@@ -308,26 +306,26 @@
 
       <p id="pricingMessage" class="pricing-line" style="display:none;"></p>
     </section>
-    
-    <!-- ACCOUNT & HISTORY SIDEBAR (populated when logged in) -->
+
+    <!-- ACCOUNT & HISTORY SIDEBAR (populated when logged in)
+         Layout is adjusted via styles.css + body.sidebar-active so it never overlaps main content -->
     <aside id="accountSidebar" class="account-sidebar" style="display:none;">
       <div class="account-sidebar-header">
         <div class="account-sidebar-label">Account</div>
         <div id="accountSidebarEmail" class="account-sidebar-email"></div>
-        <!-- New: plan + usage in sidebar -->
         <div class="account-sidebar-plan-row">
           <span id="accountSidebarPlan" class="account-sidebar-plan"></span>
           <span id="accountSidebarUsage" class="account-sidebar-usage"></span>
         </div>
+        <!-- "New prompt" button is injected here by app.js (ensureNewPromptButton) -->
       </div>
       <div class="account-sidebar-section">
         <div class="account-sidebar-label">Recent optimized prompts</div>
         <ul id="accountSidebarPrompts" class="account-sidebar-list">
-          <!-- Filled via app.js -->
+          <!-- Filled via app.js as compact, clickable prompt tabs -->
         </ul>
       </div>
     </aside>
-
   </main>
 
   <footer class="foot">
