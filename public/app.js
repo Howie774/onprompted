@@ -475,20 +475,20 @@ if (copyBtn) {
 }
 
 // --- Stripe Checkout helpers (pricing buttons) ---
-async function startCheckout(priceKey) {
+async function startCheckout(plan) {
   if (!currentUser || !currentIdToken) {
     openAuthModal();
     return;
   }
 
   try {
-    const res = await fetch('/api/create-checkout-session', {
+    const res = await fetch('/api/billing/create-checkout-session', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${currentIdToken}`,
       },
-      body: JSON.stringify({ priceKey }),
+      body: JSON.stringify({ plan }),
     });
 
     if (!res.ok) {
@@ -523,19 +523,19 @@ if (freePlanBtn) {
 
 if (starterPlanBtn) {
   starterPlanBtn.addEventListener('click', () => {
-    startCheckout('starter_0_99');
+    startCheckout('starter');
   });
 }
 
 if (proPlanBtn) {
   proPlanBtn.addEventListener('click', () => {
-    startCheckout('pro_8_99');
+    startCheckout('pro');
   });
 }
 
 if (agencyPlanBtn) {
   agencyPlanBtn.addEventListener('click', () => {
-    startCheckout('agency_19_99');
+    startCheckout('agency');
   });
 }
 
@@ -551,18 +551,7 @@ planUpgradeButtons.forEach((btn) => {
       return;
     }
 
-    let priceKey;
-    if (plan === 'starter') priceKey = 'starter_0_99';
-    else if (plan === 'pro') priceKey = 'pro_8_99';
-    else if (plan === 'agency') priceKey = 'agency_19_99';
-
-    if (!priceKey) {
-      console.error('Unknown plan key:', plan);
-      showError('Could not start checkout. Please try again.');
-      return;
-    }
-
-    startCheckout(priceKey);
+    startCheckout(plan);
   });
 });
 

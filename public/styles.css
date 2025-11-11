@@ -795,6 +795,7 @@ textarea{
   -webkit-box-orient:vertical;
 }
 
+/* legacy pricing grid (kept) */
 .pricing-grid{
   display:grid;
   grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
@@ -877,5 +878,143 @@ textarea{
   .foot{
     margin-left:260px;
     margin-right:auto;
+  }
+}
+
+/* ========== NEW: PRICING PLAN CARDS (for .plans-row / .plan-card) ========== */
+
+.plans-row{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:16px;
+  margin-top:14px;
+}
+
+.plan-card{
+  position:relative;
+  padding:14px 12px 12px;
+  border-radius:16px;
+  background:rgba(7,9,12,.98);
+  border:1px solid var(--border);
+  box-shadow:0 18px 40px rgba(0,0,0,.65);
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  overflow:hidden;
+}
+
+/* subtle glow stripe on paid tiers */
+.plan-card:not(:first-child)::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:radial-gradient(circle at top right, rgba(124,92,255,.16), transparent 60%);
+  opacity:.9;
+  pointer-events:none;
+}
+
+.plan-name{
+  font-size:11px;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:.14em;
+  color:var(--muted);
+}
+
+.plan-price{
+  font-size:20px;
+  font-weight:700;
+  color:var(--text);
+}
+
+.plan-features{
+  list-style:none;
+  margin:4px 0 6px;
+  padding:0;
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  font-size:13px;
+  color:var(--muted);
+}
+
+.plan-features li{
+  position:relative;
+  padding-left:16px;
+}
+.plan-features li::before{
+  content:"";
+  position:absolute;
+  left:4px;
+  top:8px;
+  width:5px;
+  height:5px;
+  border-radius:50%;
+  background:linear-gradient(135deg,var(--brand),var(--brand2));
+  opacity:.9;
+}
+
+.plan-cta-note{
+  margin-top:auto;
+  font-size:11px;
+  color:var(--muted);
+  opacity:.85;
+}
+
+/* Upgrade buttons */
+.plan-upgrade-btn{
+  margin-top:8px;
+  padding:9px 13px;
+  border-radius:var(--radius-pill);
+  border:1px solid rgba(124,92,255,.7);
+  background:linear-gradient(135deg,var(--brand),var(--brand2));
+  color:#050608;
+  font-size:12px;
+  font-weight:600;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  box-shadow:0 10px 26px rgba(124,92,255,.4);
+  transition:all .16s ease-out;
+}
+
+.plan-upgrade-btn:hover{
+  transform:translateY(-1px);
+  box-shadow:0 14px 32px rgba(0,0,0,.75);
+  opacity:.96;
+}
+
+.plan-upgrade-btn:active{
+  transform:translateY(0);
+  box-shadow:0 8px 20px rgba(0,0,0,.7);
+}
+
+/* Free card more low-key */
+.plan-card:first-child{
+  background:#05070a;
+  box-shadow:0 10px 26px rgba(0,0,0,.6);
+}
+.plan-card:first-child .plan-price{
+  color:var(--brand2);
+}
+.plan-card:first-child .plan-cta-note{
+  font-size:11px;
+}
+
+/* Mobile tweaks for pricing */
+@media (max-width:640px){
+  .plans-row{
+    gap:10px;
+  }
+  .plan-card{
+    padding:12px 10px 10px;
+  }
+  .plan-price{
+    font-size:18px;
+  }
+  .plan-features{
+    font-size:12px;
   }
 }
