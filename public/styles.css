@@ -53,10 +53,10 @@ main,header,footer{
   width:min(1100px,92vw);
   margin:0 auto 16px;
   display:flex;
-  justify-content:space-between;
   align-items:center;
-  gap:16px;
+  gap:18px;
   flex-wrap:wrap;
+  justify-content:flex-start;
 }
 
 .logo{
@@ -596,23 +596,42 @@ textarea{
   }
 }
 
-/* ========== AUTH UI (added) ========== */
+/* ========== AUTH UI ========== */
 
 .auth-controls{
   display:flex;
   align-items:center;
   gap:8px;
+  padding:4px 8px;
+  border-radius:999px;
+  background:rgba(7,9,12,.98);
+  border:1px solid rgba(56,68,84,.9);
 }
 
 .auth-btn{
-  padding:6px 12px;
+  padding:6px 10px;
   font-size:11px;
   border-radius:999px;
   border:1px solid rgba(124,92,255,.45);
   background:rgba(11,13,16,.98);
   color:#e5e9f5;
   cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
 }
+
+.auth-btn-main{
+  padding:8px 18px;
+  font-size:12px;
+  font-weight:600;
+  background:linear-gradient(135deg,var(--brand),var(--brand2));
+  color:#050608;
+  border:none;
+  box-shadow:0 10px 26px rgba(124,92,255,.35);
+}
+
 .auth-btn.primary{
   background:linear-gradient(135deg,var(--brand),var(--brand2));
   color:#050608;
@@ -628,6 +647,10 @@ textarea{
 .auth-user{
   font-size:11px;
   color:var(--muted);
+  max-width:160px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
 }
 
 /* Modal backdrop */
@@ -708,20 +731,19 @@ textarea{
 
 .account-sidebar{
   position:fixed;
-  right:16px;
-  bottom:90px;
-  width:260px;
-  max-height:50vh;
-  padding:10px 10px 8px;
-  border-radius:14px;
+  left:18px;
+  top:80px;
+  bottom:24px;
+  width:230px;
+  padding:12px 10px;
+  border-radius:18px;
   background:#05070a;
   border:1px solid rgba(56,68,84,.9);
-  box-shadow:0 18px 40px rgba(0,0,0,.85);
+  box-shadow:0 24px 60px rgba(0,0,0,.9);
   display:flex;
   flex-direction:column;
-  gap:6px;
+  gap:10px;
   z-index:40;
-  overflow:hidden;
 }
 
 .account-sidebar-header{
@@ -761,11 +783,11 @@ textarea{
 }
 
 .account-sidebar-list li{
-  padding:4px 6px;
-  border-radius:8px;
+  padding:6px 7px;
+  border-radius:10px;
   background:#0b0f16;
-  border:1px solid rgba(40,51,67,.8);
-  max-height:48px;
+  border:1px solid rgba(40,51,67,.9);
+  max-height:60px;
   overflow:hidden;
   text-overflow:ellipsis;
   display:-webkit-box;
@@ -777,5 +799,23 @@ textarea{
 @media (max-width:860px){
   .account-sidebar{
     display:none !important;
+  }
+}
+
+/* Shift main content so it doesn't sit under sidebar on large screens */
+@media (min-width:1100px){
+  .hero.container,
+  .how.container,
+  .examples.container,
+  .pricing-note.container{
+    margin-left:260px;
+  }
+  .top{
+    margin-left:260px;
+    margin-right:auto;
+  }
+  .foot{
+    margin-left:260px;
+    margin-right:auto;
   }
 }

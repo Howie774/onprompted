@@ -12,6 +12,14 @@
       <span class="dot"></span>
       OnPrompted
     </div>
+
+    <!-- Auth controls (moved next to logo, bigger primary button) -->
+    <div class="auth-controls">
+      <span id="userEmail" class="auth-user" style="display:none;"></span>
+      <button id="loginOpenBtn" class="auth-btn auth-btn-main">Sign in</button>
+      <button id="logoutBtn" class="auth-btn auth-btn-main" style="display:none;">Log out</button>
+    </div>
+
     <nav class="top-nav">
       <span class="badge">
         <span class="status-dot"></span>
@@ -22,15 +30,9 @@
         Pricing <span class="soon-pill">Soon</span>
       </a>
     </nav>
-    <!-- Auth controls (added) -->
-    <div class="auth-controls">
-      <span id="userEmail" class="auth-user" style="display:none;"></span>
-      <button id="loginOpenBtn" class="auth-btn">Sign in</button>
-      <button id="logoutBtn" class="auth-btn" style="display:none;">Log out</button>
-    </div>
   </header>
 
-  <!-- Auth Modal (added) -->
+  <!-- Auth Modal -->
   <div id="authModal" class="auth-modal-backdrop" style="display:none;">
     <div class="auth-modal">
       <h2 class="auth-title">Sign in to save your prompts</h2>
