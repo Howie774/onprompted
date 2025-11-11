@@ -11,89 +11,56 @@ import promptEngineRouter from './promptEngineRouter.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-/* =========================
- * Firebase Admin Init
- * ======================= */
-
-function initFirebaseAdmin() {
-  // Prefer explicit service-account style config from env
-  const projectId = process.env.FIREBASE_PROJECT_ID;
-  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY
-    ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
-    : undefined;
-
-  if (projectId && clientEmail && privateKey) {
-    console.log('[INIT] Initializing Firebase Admin with explicit credentials.');
-    admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId,
-        clientEmail,
-        privateKey,
-      }),
-    });
-  } else {
-    console.warn(
-      '[INIT] FIREBASE_* env vars not fully set. Falling back to applicationDefault(). ' +
-      'This requires GOOGLE_APPLICATION_CREDENTIALS or runtime metadata. ' +
-      'If you see "Unable to detect a Project Id" errors, set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY.'
-    );
-    admin.initializeApp({
-      credential: admin.credential.applicationDefault(),
-    });
-  }
-
-  console.log('[INIT] Firebase Admin initialized.');
-}
-
+// Initialize Firebase Admin
 if (!admin.apps.length) {
-  initFirebaseAdmin();
+  admin.initializeApp({
+    credential: admin.credential.applicationDefault(),
+  });
 }
-
 const db = admin.firestore();
 
-/* =========================
- * Stripe Init
- * ======================= */
-
+// Initialize Stripe
 if (!process.env.STRIPE_SECRET_KEY) {
-  console.warn('[INIT] STRIPE_SECRET_KEY is not set. Stripe calls will fail.');
+  console.error('[STRIPE] Missing STRIPE_SECRET_KEY env var');
 }
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: '2024-06-20',
 });
-console.log('[INIT] Stripe initialized.');
 
-/* =========================
- * Express app
- * ======================= */
-
+// Express app
 const app = express();
 app.use(cors());
 
-// JSON/body parsing for all routes EXCEPT the Stripe webhook
+// Use JSON/body parsing for all routes EXCEPT the Stripe webhook
 app.use((req, res, next) => {
-  if (req.originalUrl === '/api/stripe-webhook') return next();
+  if (req.originalUrl === '/api/stripe-webhook') {
+    return next();
+  }
   return express.json()(req, res, next);
 });
 
 app.use((req, res, next) => {
-  if (req.originalUrl === '/api/stripe-webhook') return next();
+  if (req.originalUrl === '/api/stripe-webhook') {
+    return next();
+  }
   return express.urlencoded({ extended: true })(req, res, next);
 });
 
-// Static frontend
+// Serve your front-end from /public
 app.use(express.static(path.join(__dirname, 'public')));
 
-/* =========================
- * Stripe Webhook
- * ======================= */
+/* ========== STRIPE WEBHOOK ========== */
 
 app.post(
   '/api/stripe-webhook',
   express.raw({ type: 'application/json' }),
   async (req, res) => {
     const sig = req.headers['stripe-signature'];
+
+    if (!process.env.STRIPE_WEBHOOK_SECRET) {
+      console.error('[WEBHOOK] Missing STRIPE_WEBHOOK_SECRET env var');
+      return res.status(500).send('Webhook not configured');
+    }
 
     let event;
     try {
@@ -102,19 +69,22 @@ app.post(
         sig,
         process.env.STRIPE_WEBHOOK_SECRET
       );
-      console.log('[WEBHOOK] Event received:', event.type);
     } catch (err) {
       console.error('[WEBHOOK] Signature verification failed:', err.message);
       return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
+    console.log('[WEBHOOK] Event received:', event.type);
+
     try {
+      // 1) Link checkout.session to user (customer id + subscription id)
       if (event.type === 'checkout.session.completed') {
         const session = event.data.object;
         console.log('[WEBHOOK] checkout.session.completed:', session.id);
 
         const firebaseUid =
           session.client_reference_id || session.metadata?.firebaseUid;
+
         if (firebaseUid && session.customer) {
           await db
             .collection('users')
@@ -126,21 +96,34 @@ app.post(
               },
               { merge: true }
             );
-          console.log('[WEBHOOK] Linked customer to user:', firebaseUid);
+
+          console.log(
+            `[WEBHOOK] Linked checkout session to user: ${firebaseUid}`
+          );
         } else {
-          console.warn('[WEBHOOK] Missing firebaseUid or customer on session.completed');
+          console.warn(
+            '[WEBHOOK] checkout.session.completed missing firebaseUid or customer',
+            {
+              firebaseUid,
+              customer: session.customer,
+            }
+          );
         }
       }
 
+      // 2) Create / update subscription → set plan + limits
       if (
         event.type === 'customer.subscription.created' ||
         event.type === 'customer.subscription.updated'
       ) {
         const subscription = event.data.object;
+        console.log(
+          `[WEBHOOK] ${event.type} subscription:`,
+          subscription.id
+        );
+
         const priceId = subscription.items.data[0]?.price?.id;
         const customerId = subscription.customer;
-
-        console.log('[WEBHOOK]', event.type, 'subscription:', subscription.id);
 
         let plan = 'free';
         let quota = 10;
@@ -156,34 +139,49 @@ app.post(
           quota = 5000;
         }
 
+        // Look up Firebase UID from Stripe Customer metadata
         const customer = await stripe.customers.retrieve(customerId);
         const firebaseUid = customer.metadata?.firebaseUid;
 
-        if (firebaseUid) {
+        if (!firebaseUid) {
+          console.warn(
+            '[WEBHOOK] Subscription event without firebaseUid on customer metadata',
+            { customerId }
+          );
+        } else {
+          const updateData = {
+            plan,
+            quota,
+            stripeCustomerId: customerId,
+            stripeSubscriptionId: subscription.id,
+            usedInputs: 0,
+          };
+
+          // Guard against undefined (the previous bug)
+          if (subscription.current_period_start) {
+            // Store as seconds or ms; here keep raw seconds for simplicity
+            updateData.periodStart = subscription.current_period_start;
+          }
+
           await db
             .collection('users')
             .doc(firebaseUid)
-            .set(
-              {
-                plan,
-                quota,
-                stripeCustomerId: customerId,
-                stripeSubscriptionId: subscription.id,
-                periodStart: subscription.current_period_start,
-                usedInputs: 0,
-              },
-              { merge: true }
-            );
-          console.log('[WEBHOOK] Updated plan for user:', firebaseUid, '->', plan);
-        } else {
-          console.warn('[WEBHOOK] No firebaseUid on customer metadata for subscription event');
+            .set(updateData, { merge: true });
+
+          console.log(
+            `[WEBHOOK] Updated user ${firebaseUid} -> plan=${plan}, quota=${quota}`
+          );
         }
       }
 
+      // 3) Downgrade on cancel
       if (event.type === 'customer.subscription.deleted') {
         const subscription = event.data.object;
+        console.log(
+          '[WEBHOOK] customer.subscription.deleted:',
+          subscription.id
+        );
         const customerId = subscription.customer;
-        console.log('[WEBHOOK] subscription.deleted:', subscription.id);
 
         const customer = await stripe.customers.retrieve(customerId);
         const firebaseUid = customer.metadata?.firebaseUid;
@@ -200,9 +198,15 @@ app.post(
               },
               { merge: true }
             );
-          console.log('[WEBHOOK] Reset plan to free for user:', firebaseUid);
+
+          console.log(
+            `[WEBHOOK] Downgraded user ${firebaseUid} to free plan`
+          );
         } else {
-          console.warn('[WEBHOOK] No firebaseUid on customer metadata for deletion event');
+          console.warn(
+            '[WEBHOOK] subscription.deleted without firebaseUid metadata',
+            { customerId }
+          );
         }
       }
 
@@ -214,9 +218,7 @@ app.post(
   }
 );
 
-/* =========================
- * Auth middleware
- * ======================= */
+/* ========== AUTH MIDDLEWARE ========== */
 
 async function attachFirebaseUser(req, _res, next) {
   const header = req.headers.authorization || '';
@@ -230,7 +232,7 @@ async function attachFirebaseUser(req, _res, next) {
       };
       console.log('[AUTH] Verified ID token for UID:', decoded.uid);
     } catch (err) {
-      console.warn('[AUTH] ID token verification failed:', err.message);
+      console.log('[AUTH] ID token verification failed:', err.message);
       req.user = null;
     }
   } else {
@@ -242,19 +244,16 @@ async function attachFirebaseUser(req, _res, next) {
 // All /api routes get Firebase user (if present)
 app.use('/api', attachFirebaseUser);
 
+// Require auth helper for billing routes
 function requireAuth(req, res, next) {
   if (!req.user || !req.user.uid) {
-    console.warn('[AUTH] requireAuth failed. No user on request.');
-    return res
-      .status(401)
-      .json({ error: 'auth_required', message: 'Authentication required' });
+    console.log('[AUTH] requireAuth failed. No user on request.');
+    return res.status(401).json({ error: 'auth_required' });
   }
   next();
 }
 
-/* =========================
- * Billing / Stripe Checkout
- * ======================= */
+/* ========== BILLING API ========== */
 
 const PLAN_PRICE_MAP = {
   starter: process.env.STRIPE_PRICE_STARTER,
@@ -262,24 +261,20 @@ const PLAN_PRICE_MAP = {
   agency: process.env.STRIPE_PRICE_AGENCY,
 };
 
-console.log('[INIT] PLAN_PRICE_MAP:', PLAN_PRICE_MAP);
-
 app.post(
   '/api/billing/create-checkout-session',
   requireAuth,
   async (req, res) => {
     try {
+      const { plan } = req.body || {};
       console.log('[CHECKOUT][API] Incoming body:', req.body);
       console.log('[CHECKOUT][API] Auth user:', req.user);
 
-      const { plan } = req.body || {};
       const priceId = PLAN_PRICE_MAP[plan];
+      console.log('[CHECKOUT][API] Using priceId:', priceId);
 
       if (!priceId) {
-        console.warn('[CHECKOUT][API] invalid_plan for:', plan);
-        return res
-          .status(400)
-          .json({ error: 'invalid_plan', message: 'Unknown plan on server' });
+        return res.status(400).json({ error: 'invalid_plan' });
       }
 
       const firebaseUid = req.user.uid;
@@ -287,7 +282,6 @@ app.post(
       const baseUrl =
         process.env.PUBLIC_BASE_URL || `https://${req.headers.host}`;
 
-      console.log('[CHECKOUT][API] Using priceId:', priceId);
       console.log('[CHECKOUT][API] firebaseUid:', firebaseUid);
       console.log('[CHECKOUT][API] baseUrl:', baseUrl);
 
@@ -300,20 +294,26 @@ app.post(
       let customer;
 
       if (stripeCustomerId) {
-        console.log('[CHECKOUT][API] Existing Stripe customer:', stripeCustomerId);
+        console.log(
+          '[CHECKOUT][API] Existing Stripe customer:',
+          stripeCustomerId
+        );
         customer = await stripe.customers.retrieve(stripeCustomerId);
       } else {
-        console.log('[CHECKOUT][API] Creating new Stripe customer for:', email);
+        console.log(
+          '[CHECKOUT][API] Creating new Stripe customer for:',
+          email
+        );
         customer = await stripe.customers.create({
           email,
           metadata: { firebaseUid },
         });
         stripeCustomerId = customer.id;
-        await userRef.set(
-          { stripeCustomerId },
-          { merge: true }
+        await userRef.set({ stripeCustomerId }, { merge: true });
+        console.log(
+          '[CHECKOUT][API] Created Stripe customer:',
+          stripeCustomerId
         );
-        console.log('[CHECKOUT][API] Created Stripe customer:', stripeCustomerId);
       }
 
       const session = await stripe.checkout.sessions.create({
@@ -325,27 +325,25 @@ app.post(
         client_reference_id: firebaseUid,
       });
 
-      console.log('[CHECKOUT][API] Created checkout session:', session.id);
+      console.log(
+        '[CHECKOUT][API] Created checkout session:',
+        session.id
+      );
 
       return res.json({ url: session.url });
     } catch (err) {
       console.error('[CHECKOUT][API] Error creating checkout session:', err);
-      return res.status(500).json({
-        error: 'server_error',
-        message: String(err),
-      });
+      return res.status(500).json({ error: 'server_error' });
     }
   }
 );
 
-/* =========================
- * Other API routes
- * ======================= */
+/* ========== PROMPT ENGINE API ========== */
 
-// Prompt Engineer API
 app.use('/api', promptEngineRouter);
 
-// Example echo route
+/* ========== ECHO / HEALTH ========== */
+
 app.post('/api/echo', (req, res) => {
   const { text } = req.body || {};
   res.json({
@@ -356,12 +354,9 @@ app.post('/api/echo', (req, res) => {
   });
 });
 
-// Health check
 app.get('/healthz', (_req, res) => res.send('ok'));
 
-/* =========================
- * Start server
- * ======================= */
+/* ========== SERVER START ========== */
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
