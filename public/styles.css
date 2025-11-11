@@ -653,6 +653,19 @@ textarea{
   text-overflow:ellipsis;
 }
 
+.auth-plan{
+  font-size:10px;
+  padding:4px 9px;
+  border-radius:var(--radius-pill);
+  background:rgba(7,9,12,1);
+  border:1px solid rgba(124,92,255,.5);
+  color:var(--brand2);
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  white-space:nowrap;
+}
+
 /* Modal backdrop */
 .auth-modal-backdrop{
   position:fixed;
@@ -764,6 +777,28 @@ textarea{
   color:#e5e9f5;
   font-weight:500;
   word-break:break-all;
+}
+
+.account-sidebar-plan-row{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:4px 8px;
+  margin-top:4px;
+}
+
+.account-sidebar-plan{
+  font-size:10px;
+  padding:3px 8px;
+  border-radius:var(--radius-pill);
+  background:#0b0f16;
+  border:1px solid rgba(124,92,255,.5);
+  color:var(--brand2);
+}
+
+.account-sidebar-usage{
+  font-size:10px;
+  color:var(--muted);
 }
 
 .account-sidebar-section{

@@ -14,11 +14,14 @@ const authLoginBtn = document.getElementById('authLoginBtn');
 const authSignupBtn = document.getElementById('authSignupBtn');
 const authGoogleBtn = document.getElementById('authGoogleBtn');
 const userEmailEl = document.getElementById('userEmail');
+const userPlanLabel = document.getElementById('userPlanLabel');
 
 // Account sidebar elements
 const accountSidebar = document.getElementById('accountSidebar');
 const accountSidebarEmail = document.getElementById('accountSidebarEmail');
 const accountSidebarPrompts = document.getElementById('accountSidebarPrompts');
+const accountSidebarPlan = document.getElementById('accountSidebarPlan');
+const accountSidebarUsage = document.getElementById('accountSidebarUsage');
 
 // Pricing buttons (legacy IDs, kept)
 const freePlanBtn = document.getElementById('freePlanBtn');
@@ -27,7 +30,7 @@ const proPlanBtn = document.getElementById('proPlanBtn');
 const agencyPlanBtn = document.getElementById('agencyPlanBtn');
 
 let currentUser = null;
-let currentIdToken = null; // will be sent to /api/engineer-prompt
+let currentIdToken = null; // sent to /api routes
 
 document.getElementById('year').textContent = new Date().getFullYear();
 
@@ -53,7 +56,102 @@ function escapeHtml(s) {
   ));
 }
 
-// --- Auth modal helpers ---
+/* ========== Plan / Usage UI Helpers ========== */
+
+const CLIENT_PLAN_LIMITS = {
+  free: 10,
+  starter: 50,
+  pro: 500,
+  agency: 5000,
+};
+
+function formatPlanName(plan) {
+  if (!plan) return 'Free';
+  const p = String(plan).toLowerCase();
+  if (p === 'starter') return 'Starter';
+  if (p === 'pro') return 'Pro';
+  if (p === 'agency') return 'Agency';
+  return 'Free';
+}
+
+function hidePlanUi() {
+  if (userPlanLabel) {
+    userPlanLabel.style.display = 'none';
+    userPlanLabel.textContent = '';
+  }
+  if (accountSidebarPlan) accountSidebarPlan.textContent = '';
+  if (accountSidebarUsage) accountSidebarUsage.textContent = '';
+}
+
+function applyPlanUi({ plan, used, limit }) {
+  const safeLimit = typeof limit === 'number' && limit > 0
+    ? limit
+    : CLIENT_PLAN_LIMITS[plan] || CLIENT_PLAN_LIMITS.free;
+  const safeUsed = typeof used === 'number' && used >= 0 ? used : 0;
+  const remaining = Math.max(safeLimit - safeUsed, 0);
+
+  const nicePlan = formatPlanName(plan);
+  const headerLabel = `${nicePlan} • ${remaining} left`;
+  const sidebarPlanText = `${nicePlan} plan`;
+  const sidebarUsageText = `${remaining}/${safeLimit} inputs left`;
+
+  if (userPlanLabel) {
+    userPlanLabel.textContent = headerLabel;
+    userPlanLabel.style.display = 'inline-flex';
+  }
+  if (accountSidebarPlan) {
+    accountSidebarPlan.textContent = sidebarPlanText;
+  }
+  if (accountSidebarUsage) {
+    accountSidebarUsage.textContent = sidebarUsageText;
+  }
+}
+
+async function fetchAndRenderUserPlan(uid) {
+  if (!uid || !window.firebaseDb) {
+    hidePlanUi();
+    return;
+  }
+
+  try {
+    const snap = await window.firebaseDb.collection('users').doc(uid).get();
+    if (!snap.exists) {
+      applyPlanUi({
+        plan: 'free',
+        used: 0,
+        limit: CLIENT_PLAN_LIMITS.free,
+      });
+      return;
+    }
+
+    const data = snap.data() || {};
+    const plan = data.plan || 'free';
+
+    // Handle both schemas:
+    // - usage + limit (promptEngineRouter)
+    // - usedInputs + quota (webhook code)
+    const used =
+      typeof data.usage === 'number'
+        ? data.usage
+        : typeof data.usedInputs === 'number'
+        ? data.usedInputs
+        : 0;
+
+    const limit =
+      (typeof data.limit === 'number' && data.limit > 0 && data.limit) ||
+      (typeof data.quota === 'number' && data.quota > 0 && data.quota) ||
+      CLIENT_PLAN_LIMITS[plan] ||
+      CLIENT_PLAN_LIMITS.free;
+
+    applyPlanUi({ plan, used, limit });
+  } catch (err) {
+    console.error('[ACCOUNT] Failed to load plan/usage:', err);
+    // Leave whatever was there; no hard failure.
+  }
+}
+
+/* ========== Auth modal helpers ========== */
+
 function openAuthModal() {
   if (!authModal) return;
   authModal.style.display = 'flex';
@@ -67,7 +165,6 @@ function closeAuthModal() {
   authModal.style.display = 'none';
 }
 
-// Attach auth modal events
 if (loginOpenBtn) {
   loginOpenBtn.addEventListener('click', openAuthModal);
 }
@@ -80,7 +177,8 @@ if (authModal) {
   });
 }
 
-// --- Auth helpers ---
+/* ========== Auth helpers ========== */
+
 function showError(message) {
   alert(message);
 }
@@ -148,7 +246,8 @@ if (logoutBtn) {
   });
 }
 
-// --- Prompt history save/load ---
+/* ========== Prompt history save/load ========== */
+
 async function savePromptToHistory({ goal, clarificationAnswers = null, finalPrompt }) {
   try {
     if (!currentUser || !window.firebaseDb) return;
@@ -187,7 +286,7 @@ function renderSidebarHistory(docs) {
     accountSidebarPrompts.appendChild(li);
   });
 
-  accountSidebar.style.display = docs.length ? 'flex' : 'flex';
+  accountSidebar.style.display = 'flex';
 }
 
 async function loadPromptHistory() {
@@ -202,7 +301,7 @@ async function loadPromptHistory() {
 
     const snap = await ref.get();
     if (snap.empty) {
-      if (accountSidebar) accountSidebar.style.display = 'flex'; // still show account info
+      if (accountSidebar) accountSidebar.style.display = 'flex';
       return;
     }
 
@@ -210,7 +309,6 @@ async function loadPromptHistory() {
     snap.forEach((d) => docs.push({ id: d.id, ...d.data() }));
     docs.reverse(); // oldest first
 
-    // Append history into chat (memory)
     docs.forEach((item) => {
       if (item.goal) {
         addBubble(`<strong>You (past):</strong> ${escapeHtml(item.goal)}`, 'user');
@@ -224,14 +322,14 @@ async function loadPromptHistory() {
       }
     });
 
-    // Render sidebar summary
     renderSidebarHistory(docs);
   } catch (err) {
     console.error('Error loading history:', err);
   }
 }
 
-// --- Track auth & ID token ---
+/* ========== Track auth & ID token ========== */
+
 window.firebaseAuth.onAuthStateChanged(async (user) => {
   currentUser = user || null;
 
@@ -252,6 +350,7 @@ window.firebaseAuth.onAuthStateChanged(async (user) => {
     }
 
     await loadPromptHistory();
+    await fetchAndRenderUserPlan(currentUser.uid);
   } else {
     if (userEmailEl) {
       userEmailEl.textContent = '';
@@ -261,6 +360,7 @@ window.firebaseAuth.onAuthStateChanged(async (user) => {
     if (logoutBtn) logoutBtn.style.display = 'none';
 
     currentIdToken = null;
+    hidePlanUi();
     if (accountSidebar) accountSidebar.style.display = 'none';
 
     console.log('[AUTH] No user logged in');
@@ -272,6 +372,7 @@ window.firebaseAuth.onIdTokenChanged(async (user) => {
   if (!user) {
     console.log('[AUTH] onIdTokenChanged: no user');
     currentIdToken = null;
+    hidePlanUi();
     return;
   }
   try {
@@ -283,9 +384,10 @@ window.firebaseAuth.onIdTokenChanged(async (user) => {
   }
 });
 
-// --- Clarification flow state ---
-let pendingGoal = null;             // original idea
-let awaitingClarifications = false; // if true, next submit = send answers
+/* ========== Clarification flow ========== */
+
+let pendingGoal = null;
+let awaitingClarifications = false;
 
 function setAnswerMode(on) {
   awaitingClarifications = on;
@@ -300,7 +402,6 @@ function setAnswerMode(on) {
 // Initial state
 setAnswerMode(false);
 
-// Main click handler
 beginBtn.addEventListener('click', async () => {
   const text = ideaEl.value.trim();
   if (!text) {
@@ -309,7 +410,7 @@ beginBtn.addEventListener('click', async () => {
     return;
   }
 
-  // If we're answering clarifying questions:
+  // Answering clarifications
   if (awaitingClarifications) {
     const clarificationAnswers = text;
 
@@ -356,6 +457,10 @@ beginBtn.addEventListener('click', async () => {
         finalPrompt: data.final_prompt,
       });
 
+      if (currentUser) {
+        fetchAndRenderUserPlan(currentUser.uid);
+      }
+
       pendingGoal = null;
       setAnswerMode(false);
       ideaEl.value = '';
@@ -367,7 +472,7 @@ beginBtn.addEventListener('click', async () => {
     return;
   }
 
-  // Otherwise: first phase — send initial goal
+  // First phase — send initial goal
   const goal = text;
   pendingGoal = goal;
 
@@ -422,6 +527,10 @@ beginBtn.addEventListener('click', async () => {
         finalPrompt: data.final_prompt,
       });
 
+      if (currentUser) {
+        fetchAndRenderUserPlan(currentUser.uid);
+      }
+
       pendingGoal = null;
       setAnswerMode(false);
       ideaEl.value = '';
@@ -436,7 +545,8 @@ beginBtn.addEventListener('click', async () => {
   }
 });
 
-// Copy latest optimized prompt to clipboard
+/* ========== Copy prompt button ========== */
+
 if (copyBtn) {
   copyBtn.addEventListener('click', async () => {
     try {
@@ -470,7 +580,8 @@ if (copyBtn) {
   });
 }
 
-// --- Stripe Checkout helpers (pricing buttons) ---
+/* ========== Stripe Checkout ========== */
+
 async function startCheckout(plan) {
   console.log('[CHECKOUT] startCheckout called with:', {
     plan,
@@ -528,7 +639,7 @@ async function startCheckout(plan) {
   }
 }
 
-// Legacy ID-based handlers (kept; safe if elements don't exist)
+// Legacy ID-based handlers (if present)
 if (freePlanBtn) {
   freePlanBtn.addEventListener('click', () => {
     if (!currentUser) {
@@ -539,26 +650,23 @@ if (freePlanBtn) {
     alert('You are on the free plan. 10 prompt inputs / month included.');
   });
 }
-
 if (starterPlanBtn) {
   starterPlanBtn.addEventListener('click', () => {
     startCheckout('starter');
   });
 }
-
 if (proPlanBtn) {
   proPlanBtn.addEventListener('click', () => {
     startCheckout('pro');
   });
 }
-
 if (agencyPlanBtn) {
   agencyPlanBtn.addEventListener('click', () => {
     startCheckout('agency');
   });
 }
 
-// NEW: Attach upgrade flow to .plan-upgrade-btn buttons in pricing section
+// New buttons in pricing grid
 const planUpgradeButtons = document.querySelectorAll('.plan-upgrade-btn');
 planUpgradeButtons.forEach((btn) => {
   btn.addEventListener('click', () => {
@@ -576,7 +684,8 @@ planUpgradeButtons.forEach((btn) => {
   });
 });
 
-// Optional: echo test (still fine; now includes token if present)
+/* ========== Echo test (optional) ========== */
+
 (async function pingEcho() {
   try {
     const res = await fetch('/api/echo', {

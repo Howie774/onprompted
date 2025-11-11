@@ -13,9 +13,11 @@
       OnPrompted
     </div>
 
-    <!-- Auth controls (moved next to logo, bigger primary button) -->
+    <!-- Auth controls -->
     <div class="auth-controls">
       <span id="userEmail" class="auth-user" style="display:none;"></span>
+      <!-- New: plan + usage pill in header -->
+      <span id="userPlanLabel" class="auth-plan" style="display:none;"></span>
       <button id="loginOpenBtn" class="auth-btn auth-btn-main">Sign in</button>
       <button id="logoutBtn" class="auth-btn auth-btn-main" style="display:none;">Log out</button>
     </div>
@@ -26,9 +28,8 @@
         Prompt engine: Live
       </span>
       <a href="#how-it-works" class="top-link">How it works</a>
-      <a href="#pricing" class="top-link top-link-muted">
-        Pricing <span class="soon-pill">Soon</span>
-      </a>
+      <!-- Removed "Soon" pill -->
+      <a href="#pricing" class="top-link top-link-muted">Pricing</a>
     </nav>
   </header>
 
@@ -303,7 +304,6 @@
         </div>
       </div>
 
-      <!-- Placeholder message area for upgrade flow feedback -->
       <p id="pricingMessage" class="pricing-line" style="display:none;"></p>
     </section>
     
@@ -312,6 +312,11 @@
       <div class="account-sidebar-header">
         <div class="account-sidebar-label">Account</div>
         <div id="accountSidebarEmail" class="account-sidebar-email"></div>
+        <!-- New: plan + usage in sidebar -->
+        <div class="account-sidebar-plan-row">
+          <span id="accountSidebarPlan" class="account-sidebar-plan"></span>
+          <span id="accountSidebarUsage" class="account-sidebar-usage"></span>
+        </div>
       </div>
       <div class="account-sidebar-section">
         <div class="account-sidebar-label">Recent optimized prompts</div>
@@ -340,7 +345,7 @@
   <!-- Your Firebase initialization -->
   <script src="firebase-init.js"></script>
 
-  <!-- Your existing logic -->
+  <!-- App logic -->
   <script src="app.js"></script>
 </body>
 </html>
