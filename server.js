@@ -11,46 +11,84 @@ import promptEngineRouter from './promptEngineRouter.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ===== Firebase Admin Init =====
-console.log('[INIT] Initializing Firebase Admin...');
-admin.initializeApp({
-  credential: admin.credential.applicationDefault(),
-});
-const db = admin.firestore();
-console.log('[INIT] Firebase Admin initialized.');
+/* =========================
+ * Firebase Admin Init
+ * ======================= */
 
-// ===== Stripe Init =====
+function initFirebaseAdmin() {
+  // Prefer explicit service-account style config from env
+  const projectId = process.env.FIREBASE_PROJECT_ID;
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY
+    ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
+    : undefined;
+
+  if (projectId && clientEmail && privateKey) {
+    console.log('[INIT] Initializing Firebase Admin with explicit credentials.');
+    admin.initializeApp({
+      credential: admin.credential.cert({
+        projectId,
+        clientEmail,
+        privateKey,
+      }),
+    });
+  } else {
+    console.warn(
+      '[INIT] FIREBASE_* env vars not fully set. Falling back to applicationDefault(). ' +
+      'This requires GOOGLE_APPLICATION_CREDENTIALS or runtime metadata. ' +
+      'If you see "Unable to detect a Project Id" errors, set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY.'
+    );
+    admin.initializeApp({
+      credential: admin.credential.applicationDefault(),
+    });
+  }
+
+  console.log('[INIT] Firebase Admin initialized.');
+}
+
+if (!admin.apps.length) {
+  initFirebaseAdmin();
+}
+
+const db = admin.firestore();
+
+/* =========================
+ * Stripe Init
+ * ======================= */
+
 if (!process.env.STRIPE_SECRET_KEY) {
   console.warn('[INIT] STRIPE_SECRET_KEY is not set. Stripe calls will fail.');
 }
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: '2024-06-20',
 });
-console.log('[INIT] Stripe initialized with API version 2024-06-20.');
+console.log('[INIT] Stripe initialized.');
 
-// ===== Express app =====
+/* =========================
+ * Express app
+ * ======================= */
+
 const app = express();
 app.use(cors());
 
-// Use JSON/body parsing for all routes EXCEPT the Stripe webhook
+// JSON/body parsing for all routes EXCEPT the Stripe webhook
 app.use((req, res, next) => {
-  if (req.originalUrl === '/api/stripe-webhook') {
-    return next();
-  }
+  if (req.originalUrl === '/api/stripe-webhook') return next();
   return express.json()(req, res, next);
 });
 
 app.use((req, res, next) => {
-  if (req.originalUrl === '/api/stripe-webhook') {
-    return next();
-  }
+  if (req.originalUrl === '/api/stripe-webhook') return next();
   return express.urlencoded({ extended: true })(req, res, next);
 });
 
-// Serve your front-end from /public
+// Static frontend
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ===== Stripe webhook (uses raw body) =====
+/* =========================
+ * Stripe Webhook
+ * ======================= */
+
 app.post(
   '/api/stripe-webhook',
   express.raw({ type: 'application/json' }),
@@ -73,7 +111,7 @@ app.post(
     try {
       if (event.type === 'checkout.session.completed') {
         const session = event.data.object;
-        console.log('[WEBHOOK] checkout.session.completed for session:', session.id);
+        console.log('[WEBHOOK] checkout.session.completed:', session.id);
 
         const firebaseUid =
           session.client_reference_id || session.metadata?.firebaseUid;
@@ -88,9 +126,9 @@ app.post(
               },
               { merge: true }
             );
-          console.log('[WEBHOOK] Linked Stripe customer to Firebase UID:', firebaseUid);
+          console.log('[WEBHOOK] Linked customer to user:', firebaseUid);
         } else {
-          console.warn('[WEBHOOK] Missing firebaseUid or customer on checkout.session.completed');
+          console.warn('[WEBHOOK] Missing firebaseUid or customer on session.completed');
         }
       }
 
@@ -102,7 +140,7 @@ app.post(
         const priceId = subscription.items.data[0]?.price?.id;
         const customerId = subscription.customer;
 
-        console.log(`[WEBHOOK] ${event.type} for subscription:`, subscription.id);
+        console.log('[WEBHOOK]', event.type, 'subscription:', subscription.id);
 
         let plan = 'free';
         let quota = 10;
@@ -136,7 +174,7 @@ app.post(
               },
               { merge: true }
             );
-          console.log('[WEBHOOK] Updated plan for Firebase UID:', firebaseUid, '->', plan);
+          console.log('[WEBHOOK] Updated plan for user:', firebaseUid, '->', plan);
         } else {
           console.warn('[WEBHOOK] No firebaseUid on customer metadata for subscription event');
         }
@@ -145,8 +183,7 @@ app.post(
       if (event.type === 'customer.subscription.deleted') {
         const subscription = event.data.object;
         const customerId = subscription.customer;
-
-        console.log('[WEBHOOK] customer.subscription.deleted for subscription:', subscription.id);
+        console.log('[WEBHOOK] subscription.deleted:', subscription.id);
 
         const customer = await stripe.customers.retrieve(customerId);
         const firebaseUid = customer.metadata?.firebaseUid;
@@ -163,7 +200,7 @@ app.post(
               },
               { merge: true }
             );
-          console.log('[WEBHOOK] Reset plan to free for Firebase UID:', firebaseUid);
+          console.log('[WEBHOOK] Reset plan to free for user:', firebaseUid);
         } else {
           console.warn('[WEBHOOK] No firebaseUid on customer metadata for deletion event');
         }
@@ -177,7 +214,10 @@ app.post(
   }
 );
 
-// ===== Attach Firebase user from ID token (for /api routes) =====
+/* =========================
+ * Auth middleware
+ * ======================= */
+
 async function attachFirebaseUser(req, _res, next) {
   const header = req.headers.authorization || '';
   if (header.startsWith('Bearer ')) {
@@ -202,16 +242,20 @@ async function attachFirebaseUser(req, _res, next) {
 // All /api routes get Firebase user (if present)
 app.use('/api', attachFirebaseUser);
 
-// ===== Require auth helper for billing routes =====
 function requireAuth(req, res, next) {
   if (!req.user || !req.user.uid) {
     console.warn('[AUTH] requireAuth failed. No user on request.');
-    return res.status(401).json({ error: 'auth_required', message: 'Authentication required' });
+    return res
+      .status(401)
+      .json({ error: 'auth_required', message: 'Authentication required' });
   }
   next();
 }
 
-// ===== Plan -> Price ID map =====
+/* =========================
+ * Billing / Stripe Checkout
+ * ======================= */
+
 const PLAN_PRICE_MAP = {
   starter: process.env.STRIPE_PRICE_STARTER,
   pro: process.env.STRIPE_PRICE_PRO,
@@ -220,7 +264,6 @@ const PLAN_PRICE_MAP = {
 
 console.log('[INIT] PLAN_PRICE_MAP:', PLAN_PRICE_MAP);
 
-// ===== Create Checkout Session for subscriptions =====
 app.post(
   '/api/billing/create-checkout-session',
   requireAuth,
@@ -282,7 +325,7 @@ app.post(
         client_reference_id: firebaseUid,
       });
 
-      console.log('[CHECKOUT][API] Created checkout session:', session.id, 'url:', session.url);
+      console.log('[CHECKOUT][API] Created checkout session:', session.id);
 
       return res.json({ url: session.url });
     } catch (err) {
@@ -295,11 +338,14 @@ app.post(
   }
 );
 
-// 🔹 Mount Prompt Engineer API under /api
-// This gives you: POST /api/engineer-prompt
+/* =========================
+ * Other API routes
+ * ======================= */
+
+// Prompt Engineer API
 app.use('/api', promptEngineRouter);
 
-// Example dynamic API — now also has req.user if token sent
+// Example echo route
 app.post('/api/echo', (req, res) => {
   const { text } = req.body || {};
   res.json({
@@ -312,6 +358,10 @@ app.post('/api/echo', (req, res) => {
 
 // Health check
 app.get('/healthz', (_req, res) => res.send('ok'));
+
+/* =========================
+ * Start server
+ * ======================= */
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
