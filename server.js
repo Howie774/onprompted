@@ -11,19 +11,24 @@ import promptEngineRouter from './promptEngineRouter.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Initialize Firebase Admin
+// ===== Firebase Admin Init =====
+console.log('[INIT] Initializing Firebase Admin...');
 admin.initializeApp({
   credential: admin.credential.applicationDefault(),
 });
-
 const db = admin.firestore();
+console.log('[INIT] Firebase Admin initialized.');
 
-// Initialize Stripe
+// ===== Stripe Init =====
+if (!process.env.STRIPE_SECRET_KEY) {
+  console.warn('[INIT] STRIPE_SECRET_KEY is not set. Stripe calls will fail.');
+}
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: '2024-06-20',
 });
+console.log('[INIT] Stripe initialized with API version 2024-06-20.');
 
-// Express app
+// ===== Express app =====
 const app = express();
 app.use(cors());
 
@@ -45,7 +50,7 @@ app.use((req, res, next) => {
 // Serve your front-end from /public
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Stripe webhook (uses raw body)
+// ===== Stripe webhook (uses raw body) =====
 app.post(
   '/api/stripe-webhook',
   express.raw({ type: 'application/json' }),
@@ -59,14 +64,17 @@ app.post(
         sig,
         process.env.STRIPE_WEBHOOK_SECRET
       );
+      console.log('[WEBHOOK] Event received:', event.type);
     } catch (err) {
-      console.error('Stripe webhook signature verification failed:', err.message);
+      console.error('[WEBHOOK] Signature verification failed:', err.message);
       return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
     try {
       if (event.type === 'checkout.session.completed') {
         const session = event.data.object;
+        console.log('[WEBHOOK] checkout.session.completed for session:', session.id);
+
         const firebaseUid =
           session.client_reference_id || session.metadata?.firebaseUid;
         if (firebaseUid && session.customer) {
@@ -80,6 +88,9 @@ app.post(
               },
               { merge: true }
             );
+          console.log('[WEBHOOK] Linked Stripe customer to Firebase UID:', firebaseUid);
+        } else {
+          console.warn('[WEBHOOK] Missing firebaseUid or customer on checkout.session.completed');
         }
       }
 
@@ -90,6 +101,8 @@ app.post(
         const subscription = event.data.object;
         const priceId = subscription.items.data[0]?.price?.id;
         const customerId = subscription.customer;
+
+        console.log(`[WEBHOOK] ${event.type} for subscription:`, subscription.id);
 
         let plan = 'free';
         let quota = 10;
@@ -102,10 +115,9 @@ app.post(
           quota = 500;
         } else if (priceId === process.env.STRIPE_PRICE_AGENCY) {
           plan = 'agency';
-          quota = 5000; // adjust if you choose a different limit
+          quota = 5000;
         }
 
-        // Look up Firebase UID from Stripe Customer metadata
         const customer = await stripe.customers.retrieve(customerId);
         const firebaseUid = customer.metadata?.firebaseUid;
 
@@ -124,12 +136,17 @@ app.post(
               },
               { merge: true }
             );
+          console.log('[WEBHOOK] Updated plan for Firebase UID:', firebaseUid, '->', plan);
+        } else {
+          console.warn('[WEBHOOK] No firebaseUid on customer metadata for subscription event');
         }
       }
 
       if (event.type === 'customer.subscription.deleted') {
         const subscription = event.data.object;
         const customerId = subscription.customer;
+
+        console.log('[WEBHOOK] customer.subscription.deleted for subscription:', subscription.id);
 
         const customer = await stripe.customers.retrieve(customerId);
         const firebaseUid = customer.metadata?.firebaseUid;
@@ -146,18 +163,21 @@ app.post(
               },
               { merge: true }
             );
+          console.log('[WEBHOOK] Reset plan to free for Firebase UID:', firebaseUid);
+        } else {
+          console.warn('[WEBHOOK] No firebaseUid on customer metadata for deletion event');
         }
       }
 
       res.json({ received: true });
     } catch (err) {
-      console.error('Error handling Stripe webhook event:', err);
+      console.error('[WEBHOOK] Error handling event:', err);
       res.status(500).send('Webhook handler error');
     }
   }
 );
 
-// Attach Firebase user from ID token (for all /api routes except webhook above)
+// ===== Attach Firebase user from ID token (for /api routes) =====
 async function attachFirebaseUser(req, _res, next) {
   const header = req.headers.authorization || '';
   if (header.startsWith('Bearer ')) {
@@ -168,8 +188,9 @@ async function attachFirebaseUser(req, _res, next) {
         uid: decoded.uid,
         email: decoded.email || null,
       };
+      console.log('[AUTH] Verified ID token for UID:', decoded.uid);
     } catch (err) {
-      console.log('ID token verification failed:', err.message);
+      console.warn('[AUTH] ID token verification failed:', err.message);
       req.user = null;
     }
   } else {
@@ -181,38 +202,51 @@ async function attachFirebaseUser(req, _res, next) {
 // All /api routes get Firebase user (if present)
 app.use('/api', attachFirebaseUser);
 
-// Require auth helper for billing routes
+// ===== Require auth helper for billing routes =====
 function requireAuth(req, res, next) {
   if (!req.user || !req.user.uid) {
-    return res.status(401).json({ error: 'auth_required' });
+    console.warn('[AUTH] requireAuth failed. No user on request.');
+    return res.status(401).json({ error: 'auth_required', message: 'Authentication required' });
   }
   next();
 }
 
-// Plan -> Price ID map
+// ===== Plan -> Price ID map =====
 const PLAN_PRICE_MAP = {
   starter: process.env.STRIPE_PRICE_STARTER,
   pro: process.env.STRIPE_PRICE_PRO,
   agency: process.env.STRIPE_PRICE_AGENCY,
 };
 
-// Create Checkout Session for subscriptions
+console.log('[INIT] PLAN_PRICE_MAP:', PLAN_PRICE_MAP);
+
+// ===== Create Checkout Session for subscriptions =====
 app.post(
   '/api/billing/create-checkout-session',
   requireAuth,
   async (req, res) => {
     try {
+      console.log('[CHECKOUT][API] Incoming body:', req.body);
+      console.log('[CHECKOUT][API] Auth user:', req.user);
+
       const { plan } = req.body || {};
       const priceId = PLAN_PRICE_MAP[plan];
 
       if (!priceId) {
-        return res.status(400).json({ error: 'invalid_plan' });
+        console.warn('[CHECKOUT][API] invalid_plan for:', plan);
+        return res
+          .status(400)
+          .json({ error: 'invalid_plan', message: 'Unknown plan on server' });
       }
 
       const firebaseUid = req.user.uid;
       const email = req.user.email || undefined;
       const baseUrl =
         process.env.PUBLIC_BASE_URL || `https://${req.headers.host}`;
+
+      console.log('[CHECKOUT][API] Using priceId:', priceId);
+      console.log('[CHECKOUT][API] firebaseUid:', firebaseUid);
+      console.log('[CHECKOUT][API] baseUrl:', baseUrl);
 
       const userRef = db.collection('users').doc(firebaseUid);
       const userSnap = await userRef.get();
@@ -223,8 +257,10 @@ app.post(
       let customer;
 
       if (stripeCustomerId) {
+        console.log('[CHECKOUT][API] Existing Stripe customer:', stripeCustomerId);
         customer = await stripe.customers.retrieve(stripeCustomerId);
       } else {
+        console.log('[CHECKOUT][API] Creating new Stripe customer for:', email);
         customer = await stripe.customers.create({
           email,
           metadata: { firebaseUid },
@@ -234,6 +270,7 @@ app.post(
           { stripeCustomerId },
           { merge: true }
         );
+        console.log('[CHECKOUT][API] Created Stripe customer:', stripeCustomerId);
       }
 
       const session = await stripe.checkout.sessions.create({
@@ -245,10 +282,15 @@ app.post(
         client_reference_id: firebaseUid,
       });
 
+      console.log('[CHECKOUT][API] Created checkout session:', session.id, 'url:', session.url);
+
       return res.json({ url: session.url });
     } catch (err) {
-      console.error('Error creating checkout session:', err);
-      return res.status(500).json({ error: 'server_error' });
+      console.error('[CHECKOUT][API] Error creating checkout session:', err);
+      return res.status(500).json({
+        error: 'server_error',
+        message: String(err),
+      });
     }
   }
 );
@@ -257,7 +299,7 @@ app.post(
 // This gives you: POST /api/engineer-prompt
 app.use('/api', promptEngineRouter);
 
-// Example dynamic API (still fine) — now also has req.user if token sent
+// Example dynamic API — now also has req.user if token sent
 app.post('/api/echo', (req, res) => {
   const { text } = req.body || {};
   res.json({
@@ -268,7 +310,7 @@ app.post('/api/echo', (req, res) => {
   });
 });
 
-// Health check for Render
+// Health check
 app.get('/healthz', (_req, res) => res.send('ok'));
 
 const PORT = process.env.PORT || 3000;

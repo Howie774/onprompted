@@ -94,10 +94,10 @@ if (authSignupBtn) {
 
     try {
       const cred = await window.firebaseAuth.createUserWithEmailAndPassword(email, pass);
-      console.log('Signed up:', cred.user.uid);
+      console.log('[AUTH] Signed up:', cred.user.uid);
       closeAuthModal();
     } catch (err) {
-      console.error(err);
+      console.error('[AUTH] Signup error:', err);
       showError(err.message || 'Could not create account.');
     }
   });
@@ -112,10 +112,10 @@ if (authLoginBtn) {
 
     try {
       const cred = await window.firebaseAuth.signInWithEmailAndPassword(email, pass);
-      console.log('Logged in:', cred.user.uid);
+      console.log('[AUTH] Logged in:', cred.user.uid);
       closeAuthModal();
     } catch (err) {
-      console.error(err);
+      console.error('[AUTH] Login error:', err);
       showError(err.message || 'Could not sign in.');
     }
   });
@@ -125,10 +125,11 @@ if (authLoginBtn) {
 if (authGoogleBtn) {
   authGoogleBtn.addEventListener('click', async () => {
     try {
-      await window.firebaseAuth.signInWithPopup(window.firebaseGoogleProvider);
+      const result = await window.firebaseAuth.signInWithPopup(window.firebaseGoogleProvider);
+      console.log('[AUTH] Google sign-in success:', result.user?.uid);
       closeAuthModal();
     } catch (err) {
-      console.error(err);
+      console.error('[AUTH] Google sign-in failed:', err);
       showError(err.message || 'Google sign-in failed.');
     }
   });
@@ -139,8 +140,9 @@ if (logoutBtn) {
   logoutBtn.addEventListener('click', async () => {
     try {
       await window.firebaseAuth.signOut();
+      console.log('[AUTH] Logged out');
     } catch (err) {
-      console.error(err);
+      console.error('[AUTH] Logout error:', err);
       showError('Could not log out.');
     }
   });
@@ -241,11 +243,11 @@ window.firebaseAuth.onAuthStateChanged(async (user) => {
     if (loginOpenBtn) loginOpenBtn.style.display = 'none';
     if (logoutBtn) logoutBtn.style.display = 'inline-block';
 
-    // Get initial ID token
     try {
       currentIdToken = await currentUser.getIdToken();
+      console.log('[AUTH] ID token fetched on state change, length:', currentIdToken?.length || 0);
     } catch (e) {
-      console.error('Error getting ID token:', e);
+      console.error('[AUTH] Error getting ID token:', e);
       currentIdToken = null;
     }
 
@@ -261,20 +263,22 @@ window.firebaseAuth.onAuthStateChanged(async (user) => {
     currentIdToken = null;
     if (accountSidebar) accountSidebar.style.display = 'none';
 
-    console.log('No user logged in');
+    console.log('[AUTH] No user logged in');
   }
 });
 
 // Keep ID token fresh
 window.firebaseAuth.onIdTokenChanged(async (user) => {
   if (!user) {
+    console.log('[AUTH] onIdTokenChanged: no user');
     currentIdToken = null;
     return;
   }
   try {
     currentIdToken = await user.getIdToken();
+    console.log('[AUTH] ID token refreshed, length:', currentIdToken?.length || 0);
   } catch (e) {
-    console.error('Error refreshing ID token:', e);
+    console.error('[AUTH] Error refreshing ID token:', e);
     currentIdToken = null;
   }
 });
@@ -309,10 +313,8 @@ beginBtn.addEventListener('click', async () => {
   if (awaitingClarifications) {
     const clarificationAnswers = text;
 
-    // Show user answer bubble
     addBubble(`<strong>You:</strong> ${escapeHtml(clarificationAnswers)}`, 'user');
 
-    // Show loading bubble
     const loading = addBubble('Got it. Crafting your optimized prompt…', 'ai');
 
     try {
@@ -330,7 +332,7 @@ beginBtn.addEventListener('click', async () => {
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        console.error('Prompt API error (final):', err);
+        console.error('[PROMPT] API error (final):', res.status, err);
         loading.innerHTML = 'Something went wrong generating your prompt. Please try again.';
         return;
       }
@@ -338,6 +340,7 @@ beginBtn.addEventListener('click', async () => {
       const data = await res.json();
 
       if (data.status !== 'ready' || !data.final_prompt) {
+        console.error('[PROMPT] Unexpected response (final):', data);
         loading.innerHTML = 'Unexpected response. Please try again.';
         return;
       }
@@ -347,19 +350,17 @@ beginBtn.addEventListener('click', async () => {
         <pre class="prompt-block">${escapeHtml(data.final_prompt)}</pre>
       `;
 
-      // Save to history if logged in
       savePromptToHistory({
         goal: pendingGoal,
         clarificationAnswers,
         finalPrompt: data.final_prompt,
       });
 
-      // Reset flow
       pendingGoal = null;
       setAnswerMode(false);
       ideaEl.value = '';
     } catch (e) {
-      console.error(e);
+      console.error('[PROMPT] Network error (final):', e);
       loading.innerHTML = 'Network error while generating your prompt.';
     }
 
@@ -370,10 +371,8 @@ beginBtn.addEventListener('click', async () => {
   const goal = text;
   pendingGoal = goal;
 
-  // Show user bubble
   addBubble(`<strong>You:</strong> ${escapeHtml(goal)}`, 'user');
 
-  // Show loading
   const loading = addBubble('Thinking through what I need to ask…', 'ai');
 
   try {
@@ -388,14 +387,13 @@ beginBtn.addEventListener('click', async () => {
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      console.error('Prompt API error (phase 1):', err);
+      console.error('[PROMPT] API error (phase 1):', res.status, err);
       loading.innerHTML = 'Something went wrong. Please try again.';
       return;
     }
 
     const data = await res.json();
 
-    // If clarifications are needed
     if (data.status === 'needs_clarification' && Array.isArray(data.questions) && data.questions.length) {
       const qsHtml = data.questions
         .map((q) => `<li>${escapeHtml(q)}</li>`)
@@ -407,21 +405,18 @@ beginBtn.addEventListener('click', async () => {
         <div class="notes-label">Answer above, then hit “Answer & Generate”.</div>
       `;
 
-      // Enter answer mode
       ideaEl.value = '';
       setAnswerMode(true);
       ideaEl.focus();
       return;
     }
 
-    // Otherwise, we already have the final optimized prompt
     if (data.status === 'ready' && data.final_prompt) {
       loading.innerHTML = `
         <div><strong>Optimized Prompt:</strong></div>
         <pre class="prompt-block">${escapeHtml(data.final_prompt)}</pre>
       `;
 
-      // Save to history if logged in
       savePromptToHistory({
         goal,
         finalPrompt: data.final_prompt,
@@ -433,9 +428,10 @@ beginBtn.addEventListener('click', async () => {
       return;
     }
 
+    console.error('[PROMPT] Unexpected response (phase 1):', data);
     loading.innerHTML = 'Unexpected response. Please try again.';
   } catch (e) {
-    console.error(e);
+    console.error('[PROMPT] Network error (phase 1):', e);
     loading.innerHTML = 'Network error talking to the prompt engine.';
   }
 });
@@ -468,7 +464,7 @@ if (copyBtn) {
         copyBtn.textContent = 'Copy prompt';
       }, 1500);
     } catch (err) {
-      console.error('Clipboard error:', err);
+      console.error('[CLIPBOARD] Error:', err);
       alert('Could not copy. Please copy manually.');
     }
   });
@@ -476,7 +472,15 @@ if (copyBtn) {
 
 // --- Stripe Checkout helpers (pricing buttons) ---
 async function startCheckout(plan) {
+  console.log('[CHECKOUT] startCheckout called with:', {
+    plan,
+    hasUser: !!currentUser,
+    userUid: currentUser?.uid,
+    hasToken: !!currentIdToken,
+  });
+
   if (!currentUser || !currentIdToken) {
+    console.warn('[CHECKOUT] Missing user or token, opening auth modal.');
     openAuthModal();
     return;
   }
@@ -491,21 +495,35 @@ async function startCheckout(plan) {
       body: JSON.stringify({ plan }),
     });
 
+    const responseText = await res.text();
+    let data;
+    try {
+      data = responseText ? JSON.parse(responseText) : {};
+    } catch (e) {
+      console.error('[CHECKOUT] Failed to parse JSON response:', responseText);
+      data = { raw: responseText };
+    }
+
+    console.log('[CHECKOUT] Response status:', res.status, 'body:', data);
+
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      console.error('Checkout session error:', err);
-      showError('Could not start checkout. Please try again.');
+      const msg =
+        data.message ||
+        data.error ||
+        `Checkout failed with status ${res.status}`;
+      showError(`Could not start checkout: ${msg}`);
       return;
     }
 
-    const data = await res.json();
     if (data.url) {
+      console.log('[CHECKOUT] Redirecting to Stripe URL:', data.url);
       window.location.href = data.url;
     } else {
+      console.error('[CHECKOUT] Missing URL in successful response:', data);
       showError('Checkout URL missing. Please try again.');
     }
   } catch (err) {
-    console.error('Checkout network error:', err);
+    console.error('[CHECKOUT] Network error starting checkout:', err);
     showError('Network error starting checkout.');
   }
 }
@@ -514,6 +532,7 @@ async function startCheckout(plan) {
 if (freePlanBtn) {
   freePlanBtn.addEventListener('click', () => {
     if (!currentUser) {
+      console.log('[CHECKOUT] Free plan click, no user -> auth modal');
       openAuthModal();
       return;
     }
@@ -544,9 +563,11 @@ const planUpgradeButtons = document.querySelectorAll('.plan-upgrade-btn');
 planUpgradeButtons.forEach((btn) => {
   btn.addEventListener('click', () => {
     const plan = btn.dataset.plan;
+    console.log('[CHECKOUT] Upgrade button clicked:', plan);
     if (!plan) return;
 
     if (!currentUser || !currentIdToken) {
+      console.warn('[CHECKOUT] No user/token on upgrade click -> auth modal');
       openAuthModal();
       return;
     }
@@ -566,8 +587,9 @@ planUpgradeButtons.forEach((btn) => {
       },
       body: JSON.stringify({ text: 'hello from browser' }),
     });
-    console.log('echo:', await res.json());
+    const data = await res.json().catch(() => ({}));
+    console.log('[ECHO] Response:', data);
   } catch (e) {
-    console.log('echo failed', e);
+    console.log('[ECHO] failed', e);
   }
 })();
