@@ -1,12 +1,84 @@
 // promptEngineRouter.js 
 import express from 'express';
 import OpenAI from 'openai';
+import admin from 'firebase-admin';
 
 const router = express.Router();
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
+
+// Firestore (from firebase-admin, already initialized in server.js)
+const db = admin.firestore();
+
+// Simple per-plan monthly input limits
+const PLAN_LIMITS = {
+  free: 10,          // 10 inputs/month for signed-up users
+  starter_0_99: 50,  // $0.99
+  pro_8_99: 500,     // $8.99
+  agency_19_99: 5000 // $19.99 agency plan (team)
+};
+
+function resolvePlanLimit(usageData) {
+  if (!usageData) return PLAN_LIMITS.free;
+  if (typeof usageData.limit === 'number') return usageData.limit;
+
+  const plan = usageData.plan || 'free';
+  return PLAN_LIMITS[plan] || PLAN_LIMITS.free;
+}
+
+// Ensure each user has a usage doc; reset monthly window when needed
+async function getOrInitUsage(uid) {
+  const ref = db.collection('usage').doc(uid);
+  const snap = await ref.get();
+  const now = new Date();
+
+  if (!snap.exists) {
+    const initial = {
+      plan: 'free',
+      used: 0,
+      periodStart: now.toISOString()
+    };
+    await ref.set(initial);
+    return { ref, data: initial };
+  }
+
+  const data = snap.data() || {};
+  let updated = { ...data };
+
+  const periodStart = data.periodStart ? new Date(data.periodStart) : null;
+  if (!periodStart || isNaN(periodStart.getTime())) {
+    // Fix bad/missing periodStart
+    updated.periodStart = now.toISOString();
+    if (typeof updated.used !== 'number') updated.used = 0;
+  } else {
+    // Reset if more than 1 month old
+    const nextReset = new Date(periodStart);
+    nextReset.setMonth(nextReset.getMonth() + 1);
+    if (now >= nextReset) {
+      updated.periodStart = now.toISOString();
+      updated.used = 0;
+    }
+  }
+
+  // Persist any corrections/resets
+  if (JSON.stringify(updated) !== JSON.stringify(data)) {
+    await ref.set(updated, { merge: true });
+  }
+
+  return { ref, data: updated };
+}
+
+async function incrementUsage(ref) {
+  try {
+    await ref.update({
+      used: admin.firestore.FieldValue.increment(1)
+    });
+  } catch (err) {
+    console.error('Error incrementing usage:', err);
+  }
+}
 
 const SYSTEM_PROMPT = `
 You are PROMPT-OPTIMIZER, an AI whose only job is to transform any user request
@@ -257,11 +329,33 @@ FORMAT REQUIREMENTS (CRITICAL)
 
 router.post('/engineer-prompt', async (req, res) => {
   try {
+    // 🔐 Require authenticated user (Firebase ID token already verified in middleware)
+    if (!req.user || !req.user.uid) {
+      return res.status(401).json({
+        error: 'Sign in required',
+        message: 'Create a free OnPrompted account to get 10 optimized prompt inputs per month.',
+        requireAuth: true,
+      });
+    }
+
     const { goal, category, extraContext, clarificationAnswers } = req.body || {};
 
     if (!goal || typeof goal !== 'string') {
       return res.status(400).json({
         error: 'Missing "goal" (string) in request body.',
+      });
+    }
+
+    // 🔢 Per-user usage & plan check (each call = 1 input)
+    const { ref: usageRef, data: usageData } = await getOrInitUsage(req.user.uid);
+    const limit = resolvePlanLimit(usageData);
+
+    if (typeof usageData.used === 'number' && usageData.used >= limit) {
+      return res.status(402).json({
+        error: 'You have reached your monthly prompt input limit for your current plan.',
+        used: usageData.used,
+        limit,
+        upgrade: true,
       });
     }
 
@@ -338,6 +432,9 @@ If the request IS already fully clear, specific, and well-scoped:
       });
     }
 
+    // If we get here, count this as one used input (clarification or final)
+    await incrementUsage(usageRef);
+
     // Basic sanity: enforce allowed shapes
     if (parsed.status === 'needs_clarification') {
       if (!Array.isArray(parsed.questions) || parsed.questions.length === 0) {
@@ -359,7 +456,7 @@ If the request IS already fully clear, specific, and well-scoped:
       });
     }
 
-    // Fallback if model misbehaves
+    // Fallback if model misbehaves but at least has final_prompt
     if (typeof parsed.final_prompt === 'string') {
       return res.json({
         status: 'ready',

@@ -20,6 +20,12 @@ const accountSidebar = document.getElementById('accountSidebar');
 const accountSidebarEmail = document.getElementById('accountSidebarEmail');
 const accountSidebarPrompts = document.getElementById('accountSidebarPrompts');
 
+// Pricing buttons (legacy IDs, kept)
+const freePlanBtn = document.getElementById('freePlanBtn');
+const starterPlanBtn = document.getElementById('starterPlanBtn');
+const proPlanBtn = document.getElementById('proPlanBtn');
+const agencyPlanBtn = document.getElementById('agencyPlanBtn');
+
 let currentUser = null;
 let currentIdToken = null; // will be sent to /api/engineer-prompt
 
@@ -115,7 +121,7 @@ if (authLoginBtn) {
   });
 }
 
-// Google login (new)
+// Google login
 if (authGoogleBtn) {
   authGoogleBtn.addEventListener('click', async () => {
     try {
@@ -467,6 +473,98 @@ if (copyBtn) {
     }
   });
 }
+
+// --- Stripe Checkout helpers (pricing buttons) ---
+async function startCheckout(priceKey) {
+  if (!currentUser || !currentIdToken) {
+    openAuthModal();
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/create-checkout-session', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${currentIdToken}`,
+      },
+      body: JSON.stringify({ priceKey }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      console.error('Checkout session error:', err);
+      showError('Could not start checkout. Please try again.');
+      return;
+    }
+
+    const data = await res.json();
+    if (data.url) {
+      window.location.href = data.url;
+    } else {
+      showError('Checkout URL missing. Please try again.');
+    }
+  } catch (err) {
+    console.error('Checkout network error:', err);
+    showError('Network error starting checkout.');
+  }
+}
+
+// Legacy ID-based handlers (kept; safe if elements don't exist)
+if (freePlanBtn) {
+  freePlanBtn.addEventListener('click', () => {
+    if (!currentUser) {
+      openAuthModal();
+      return;
+    }
+    alert('You are on the free plan. 10 prompt inputs / month included.');
+  });
+}
+
+if (starterPlanBtn) {
+  starterPlanBtn.addEventListener('click', () => {
+    startCheckout('starter_0_99');
+  });
+}
+
+if (proPlanBtn) {
+  proPlanBtn.addEventListener('click', () => {
+    startCheckout('pro_8_99');
+  });
+}
+
+if (agencyPlanBtn) {
+  agencyPlanBtn.addEventListener('click', () => {
+    startCheckout('agency_19_99');
+  });
+}
+
+// NEW: Attach upgrade flow to .plan-upgrade-btn buttons in pricing section
+const planUpgradeButtons = document.querySelectorAll('.plan-upgrade-btn');
+planUpgradeButtons.forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const plan = btn.dataset.plan;
+    if (!plan) return;
+
+    if (!currentUser || !currentIdToken) {
+      openAuthModal();
+      return;
+    }
+
+    let priceKey;
+    if (plan === 'starter') priceKey = 'starter_0_99';
+    else if (plan === 'pro') priceKey = 'pro_8_99';
+    else if (plan === 'agency') priceKey = 'agency_19_99';
+
+    if (!priceKey) {
+      console.error('Unknown plan key:', plan);
+      showError('Could not start checkout. Please try again.');
+      return;
+    }
+
+    startCheckout(priceKey);
+  });
+});
 
 // Optional: echo test (still fine; now includes token if present)
 (async function pingEcho() {

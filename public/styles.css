@@ -795,6 +795,66 @@ textarea{
   -webkit-box-orient:vertical;
 }
 
+.pricing-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+  gap:14px;
+  margin-top:10px;
+}
+
+.pricing-card{
+  padding:12px 12px 10px;
+  border-radius:14px;
+  border:1px solid var(--border);
+  background:rgba(8,10,14,.98);
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+.pricing-card h3{
+  margin:0;
+  font-size:16px;
+  font-weight:600;
+}
+
+.price{
+  margin:0;
+  font-size:18px;
+  font-weight:700;
+}
+
+.pricing-desc{
+  margin:0;
+  font-size:12px;
+  color:var(--muted);
+}
+
+.pricing-list{
+  margin:4px 0 6px;
+  padding-left:16px;
+  font-size:11px;
+  color:var(--muted);
+}
+
+.pricing-btn{
+  margin-top:auto;
+  padding:7px 10px;
+  border-radius:10px;
+  border:1px solid rgba(124,92,255,.4);
+  background:#05070a;
+  color:#e5e9f5;
+  font-size:11px;
+  cursor:pointer;
+}
+
+.pricing-btn.primary{
+  background:linear-gradient(135deg,var(--brand),var(--brand2));
+  color:#050608;
+  border:none;
+  box-shadow:0 8px 22px rgba(124,92,255,.35);
+}
+
 /* Hide sidebar on small screens */
 @media (max-width:860px){
   .account-sidebar{

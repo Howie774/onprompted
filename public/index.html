@@ -225,15 +225,86 @@
       </div>
     </section>
 
-    <!-- TRUST & PRICING -->
+    <!-- TRUST & PRICING + UPGRADE BUTTONS -->
     <section id="pricing" class="pricing-note container">
       <p class="trust-line">
         Works with ChatGPT, Claude, Gemini, Perplexity, and any LLM.
         Your inputs are processed securely; no resale of your prompts.
       </p>
       <p class="pricing-line">
-        Free to use while we refine with real prompts. Simple plans coming soon.
+        Create a free account to get <strong>10 optimized inputs per month</strong>. Upgrade any time for more volume.
       </p>
+
+      <div class="plans-row">
+        <!-- Free plan (baseline) -->
+        <div class="plan-card">
+          <div class="plan-name">Free</div>
+          <div class="plan-price">$0 / month</div>
+          <ul class="plan-features">
+            <li>10 inputs per month</li>
+            <li>Access to core prompt optimizer</li>
+            <li>Personal history sidebar</li>
+          </ul>
+          <div class="plan-cta-note">Included when you sign up.</div>
+        </div>
+
+        <!-- Starter -->
+        <div class="plan-card">
+          <div class="plan-name">Starter</div>
+          <div class="plan-price">$0.99 / month</div>
+          <ul class="plan-features">
+            <li>50 inputs per month</li>
+            <li>For solo builders & creators</li>
+            <li>Everything in Free</li>
+          </ul>
+          <button
+            class="plan-upgrade-btn"
+            data-plan="starter"
+            type="button"
+          >
+            Upgrade to Starter
+          </button>
+        </div>
+
+        <!-- Pro -->
+        <div class="plan-card">
+          <div class="plan-name">Pro</div>
+          <div class="plan-price">$8.99 / month</div>
+          <ul class="plan-features">
+            <li>500 inputs per month</li>
+            <li>For power users & agencies</li>
+            <li>Priority processing</li>
+          </ul>
+          <button
+            class="plan-upgrade-btn"
+            data-plan="pro"
+            type="button"
+          >
+            Upgrade to Pro
+          </button>
+        </div>
+
+        <!-- Agency -->
+        <div class="plan-card">
+          <div class="plan-name">Agency</div>
+          <div class="plan-price">$19.99 / month</div>
+          <ul class="plan-features">
+            <li>For teams (up to 10 seats)</li>
+            <li>Higher input limits (agency tier)</li>
+            <li>Team features rolling out</li>
+          </ul>
+          <button
+            class="plan-upgrade-btn"
+            data-plan="agency"
+            type="button"
+          >
+            Upgrade to Agency
+          </button>
+        </div>
+      </div>
+
+      <!-- Placeholder message area for upgrade flow feedback -->
+      <p id="pricingMessage" class="pricing-line" style="display:none;"></p>
     </section>
     
     <!-- ACCOUNT & HISTORY SIDEBAR (populated when logged in) -->
