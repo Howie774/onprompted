@@ -9,8 +9,8 @@
   --radius-lg:20px;
   --radius-md:16px;
   --radius-pill:999px;
-  --accent-warm:#ffb86b;   /* NEW */
-  --accent-soft:#ff9f7a;   /* NEW */
+  --accent-warm:#ffb86b;
+  --accent-soft:#ff9f7a;
 }
 
 *{
@@ -56,7 +56,7 @@ main,header,footer{
   margin:0 auto 16px;
   display:flex;
   align-items:center;
-  gap:18px;
+  gap:14px;
   flex-wrap:wrap;
   justify-content:flex-start;
 }
@@ -74,44 +74,96 @@ main,header,footer{
   height:12px;
   border-radius:50%;
   background:linear-gradient(135deg,var(--brand),var(--brand2));
-  box-shadow:0 0 0 4px rgba(124,92,255,.14);
+  box-shadow:0 0 0 2px rgba(124,92,255,.14);
 }
 
+/* Auth cluster: visible but calmer */
+.auth-controls{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:4px 8px;
+  border-radius:999px;
+  background:#05070a;
+  border:1px solid rgba(56,68,84,.7);
+}
+
+.auth-btn{
+  padding:6px 10px;
+  font-size:11px;
+  border-radius:999px;
+  border:1px solid rgba(124,92,255,.32);
+  background:#05070a;
+  color:#e5e9f5;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  box-shadow:none;
+}
+
+.auth-btn-main{
+  padding:7px 14px;
+  font-size:11px;
+  font-weight:600;
+  background:transparent;
+  color:var(--brand2);
+  border:1px solid rgba(124,92,255,.6);
+  box-shadow:none;
+}
+
+.auth-btn.primary{
+  background:linear-gradient(135deg,var(--brand),var(--brand2));
+  color:#050608;
+  border:none;
+}
+.auth-btn.ghost{
+  background:transparent;
+}
+.auth-btn:hover{
+  opacity:.9;
+}
+
+/* Top nav: lighter + smaller so hero wins */
 .top-nav{
   display:flex;
   align-items:center;
-  gap:14px;
+  gap:10px;
   flex-wrap:wrap;
   margin-left:auto;
 }
 
+/* “Prompt engine: Live” pill — thinner, softer */
 .badge{
   display:inline-flex;
   align-items:center;
-  gap:6px;
-  font-size:12px;
+  gap:5px;
+  font-size:10px;
   color:var(--accent-warm);
-  padding:6px 11px;
+  padding:4px 9px;
   border-radius:var(--radius-pill);
-  border:1px solid rgba(255,184,107,.35);
-  background:rgba(11,13,16,.95);
+  border:1px solid rgba(255,184,107,.22);
+  background:#05070a;
+  box-shadow:none;
 }
 
 .status-dot{
-  width:6px;
-  height:6px;
+  width:5px;
+  height:5px;
   border-radius:50%;
   background:var(--accent-warm);
-  box-shadow:0 0 6px var(--accent-warm);
+  box-shadow:none;
 }
 
+/* Nav links: subtle, secondary */
 .top-link{
-  font-size:13px;
-  color:var(--text);
+  font-size:11px;
+  color:var(--muted);
   text-decoration:none;
-  padding:4px 0;
+  padding:2px 0;
   border-bottom:1px solid transparent;
-  opacity:.9;
+  opacity:.85;
 }
 .top-link:hover{
   border-bottom-color:var(--accent-soft);
@@ -120,6 +172,7 @@ main,header,footer{
 .top-link-muted{
   color:var(--muted);
 }
+
 .soon-pill{
   font-size:10px;
   padding:2px 6px;
@@ -132,17 +185,18 @@ main,header,footer{
 /* ========== HERO / MAIN CARD ========== */
 
 .hero{
-  background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,184,107,.02));
+  background:var(--panel);
   border:1px solid var(--border);
   border-radius:var(--radius-lg);
-  padding:24px 22px 20px;
+  padding:22px 20px 18px;
   margin-bottom:26px;
-  box-shadow:0 18px 50px rgba(0,0,0,.45);
+  box-shadow:0 16px 36px rgba(0,0,0,.42);
 }
 
+/* Slightly calmer H1 so textarea dominates */
 .hero-title{
   margin:0 0 8px;
-  font-size:clamp(32px,4vw,46px);
+  font-size:clamp(30px,3.4vw,40px);
   line-height:1.08;
   font-weight:800;
   letter-spacing:-0.01em;
@@ -151,7 +205,7 @@ main,header,footer{
 .hero-subtitle{
   margin:0 0 16px;
   color:var(--muted);
-  font-size:17px;
+  font-size:16px;
   line-height:1.7;
   max-width:640px;
 }
@@ -168,30 +222,30 @@ main,header,footer{
   font-size:16px;
 }
 
-/* Built for chips */
+/* Built for chips — a bit softer so they don’t compete */
 .who-for{
   display:flex;
   flex-wrap:wrap;
   align-items:center;
-  gap:8px;
-  margin-bottom:16px;
+  gap:6px;
+  margin-bottom:14px;
 }
 
 .who-label{
-  font-size:11px;
+  font-size:10px;
   color:var(--muted);
   text-transform:uppercase;
   letter-spacing:.12em;
 }
 
 .who-chip{
-  font-size:12px;
-  padding:4px 10px;
+  font-size:11px;
+  padding:3px 9px;
   border-radius:var(--radius-pill);
-  border:1px solid rgba(124,92,255,.24);
+  border:1px solid rgba(124,92,255,.18);
   color:#d7e0ff;
-  background:rgba(9,11,15,.98);
-  opacity:.95;
+  background:#05070a;
+  opacity:.9;
 }
 
 /* ========== INPUT AREA ========== */
@@ -199,12 +253,12 @@ main,header,footer{
 .input-block{
   display:flex;
   gap:14px;
-  background:var(--panel);
+  background:#05070a;
   border:1px solid var(--border);
   border-radius:var(--radius-md);
   padding:14px;
   align-items:flex-start;
-  margin-bottom:12px;
+  margin-bottom:14px;
 }
 
 .input-left{
@@ -217,7 +271,7 @@ main,header,footer{
 .input-right{
   display:flex;
   flex-direction:column;
-  gap:10px;
+  gap:8px;
   align-items:flex-start;
   width:230px;
 }
@@ -230,7 +284,7 @@ main,header,footer{
   letter-spacing:.02em;
 }
 
-/* Main textarea — more readable & obviously interactive */
+/* Main textarea — remains the star */
 textarea{
   flex:1;
   min-height:120px;
@@ -266,7 +320,7 @@ textarea:focus{
   flex-direction:column;
   gap:2px;
   margin:0;
-  font-size:13px;
+  font-size:12px;
   color:var(--muted);
   line-height:1.6;
 }
@@ -274,7 +328,7 @@ textarea:focus{
   white-space:nowrap;
 }
 
-/* Primary button */
+/* Primary button – keep strong gradient (primary action) */
 .btn-primary{
   cursor:pointer;
   border:none;
@@ -343,8 +397,9 @@ textarea:focus{
 
 /* ========== OUTPUT PANEL ========== */
 
+/* More breathing room between input & output */
 .panel{
-  margin-top:14px;
+  margin-top:18px;
   background:var(--panel);
   border:1px solid var(--border);
   border-radius:var(--radius-md);
@@ -369,12 +424,13 @@ textarea:focus{
 
 .panel-subcopy{
   margin:0 0 8px;
-  font-size:14px;
+  font-size:13px;
   color:var(--muted);
   line-height:1.6;
+  font-weight:400;
 }
 
-/* Copy button — bigger & styled so it gets noticed */
+/* Copy button — keep strong, it’s a primary action */
 .btn-copy{
   cursor:pointer;
   padding:10px 18px;
@@ -407,9 +463,9 @@ textarea:focus{
   display:flex;
   flex-direction:column;
   gap:10px;
-  max-height:52vh;      /* more breathing room */
+  max-height:52vh;
   overflow-y:auto;
-  padding-right:4px;    /* space for scrollbar */
+  padding-right:4px;
 }
 
 .bubble{
@@ -635,95 +691,6 @@ textarea:focus{
 
 /* ========== AUTH UI ========== */
 
-.auth-controls{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  padding:4px 8px;
-  border-radius:999px;
-  background:rgba(7,9,12,.98);
-  border:1px solid rgba(56,68,84,.9);
-}
-
-.auth-btn{
-  padding:6px 10px;
-  font-size:11px;
-  border-radius:999px;
-  border:1px solid rgba(124,92,255,.45);
-  background:rgba(11,13,16,.98);
-  color:#e5e9f5;
-  cursor:pointer;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:6px;
-}
-
-.auth-btn-main{
-  padding:8px 18px;
-  font-size:12px;
-  font-weight:600;
-  background:linear-gradient(135deg,var(--brand),var(--brand2));
-  color:#050608;
-  border:none;
-  box-shadow:0 10px 26px rgba(124,92,255,.35);
-}
-
-.auth-btn.primary{
-  background:linear-gradient(135deg,var(--brand),var(--brand2));
-  color:#050608;
-  border:none;
-}
-.auth-btn.ghost{
-  background:transparent;
-}
-.auth-btn:hover{
-  opacity:.9;
-}
-
-/* Auth Google */
-.auth-btn-google{
-  width:100%;
-  justify-content:center;
-  margin-top:2px;
-  padding:9px 10px;
-  border-radius:12px;
-  border:1px solid rgba(148,163,253,.55);
-  background:#05070a;
-  font-size:12px;
-  font-weight:500;
-  box-shadow:0 10px 26px rgba(0,0,0,.7);
-}
-.auth-btn-google:hover{
-  background:#0b0f16;
-  border-color:var(--brand2);
-}
-.google-icon{
-  width:16px;
-  height:16px;
-  border-radius:4px;
-  display:inline-block;
-  background:
-    conic-gradient(from 0deg,
-      #ea4335 0deg 90deg,
-      #fbbc05 90deg 180deg,
-      #34a853 180deg 270deg,
-      #4285f4 270deg 360deg);
-  position:relative;
-}
-.google-icon::after{
-  content:"G";
-  position:absolute;
-  inset:0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:10px;
-  font-weight:700;
-  color:#fff;
-}
-
-/* Header plan pill: slightly larger */
 .auth-user{
   font-size:11px;
   color:var(--muted);
@@ -735,10 +702,10 @@ textarea:focus{
 
 .auth-plan{
   font-size:11px;
-  padding:6px 12px;
+  padding:5px 10px;
   border-radius:var(--radius-pill);
-  background:rgba(7,9,12,1);
-  border:1px solid rgba(124,92,255,.6);
+  background:#05070a;
+  border:1px solid rgba(124,92,255,.5);
   color:var(--brand2);
   display:inline-flex;
   align-items:center;
@@ -759,7 +726,7 @@ textarea:focus{
 
 /* Modal box */
 .auth-modal{
-  width:min(520px,96vw); /* slightly larger */
+  width:min(520px,96vw);
   padding:26px 24px 20px;
   border-radius:24px;
   background:
@@ -848,8 +815,51 @@ textarea:focus{
   line-height:1.6;
 }
 
+/* Auth Google */
+.auth-btn-google{
+  width:100%;
+  justify-content:center;
+  margin-top:2px;
+  padding:9px 10px;
+  border-radius:12px;
+  border:1px solid rgba(148,163,253,.55);
+  background:#05070a;
+  font-size:12px;
+  font-weight:500;
+  box-shadow:0 10px 26px rgba(0,0,0,.7);
+}
+.auth-btn-google:hover{
+  background:#0b0f16;
+  border-color:var(--brand2);
+}
+.google-icon{
+  width:16px;
+  height:16px;
+  border-radius:4px;
+  display:inline-block;
+  background:
+    conic-gradient(from 0deg,
+      #ea4335 0deg 90deg,
+      #fbbc05 90deg 180deg,
+      #34a853 180deg 270deg,
+      #4285f4 270deg 360deg);
+  position:relative;
+}
+.google-icon::after{
+  content:"G";
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:10px;
+  font-weight:700;
+  color:#fff;
+}
+
 /* ========== ACCOUNT SIDEBAR ========== */
 
+/* Flatter, quieter so it doesn’t compete with hero */
 .account-sidebar{
   position:fixed;
   left:18px;
@@ -858,17 +868,14 @@ textarea:focus{
   width:260px;
   padding:14px 12px;
   border-radius:22px;
-  background:
-    radial-gradient(180px 220px at 0% 0%, rgba(124,92,255,.16), transparent),
-    radial-gradient(220px 260px at 100% 100%, rgba(255,184,107,.10), transparent),
-    #020308;
-  border:1px solid rgba(56,68,84,.95);
-  box-shadow:0 26px 70px rgba(0,0,0,.95);
+  background:#05070a;
+  border:1px solid rgba(56,68,84,.9);
+  box-shadow:0 18px 40px rgba(0,0,0,.7);
   display:flex;
   flex-direction:column;
   gap:10px;
   z-index:40;
-  backdrop-filter:blur(12px);
+  backdrop-filter:blur(8px);
 }
 
 .account-sidebar-header{
@@ -900,31 +907,31 @@ textarea:focus{
   margin-top:4px;
 }
 
-/* Bigger, more prominent tier pill */
+/* Tier pill softened */
 .account-sidebar-plan{
-  font-size:12px;
-  padding:7px 13px;
+  font-size:11px;
+  padding:6px 11px;
   border-radius:var(--radius-pill);
-  background:linear-gradient(135deg,rgba(124,92,255,.24),rgba(255,184,107,.14));
-  border:1px solid rgba(124,92,255,.9);
+  background:#05070a;
+  border:1px solid rgba(124,92,255,.6);
   color:var(--brand2);
   display:inline-flex;
   align-items:center;
   gap:6px;
-  font-weight:600;
+  font-weight:500;
 }
 
 .account-sidebar-plan::before{
   content:"";
-  width:8px;
-  height:8px;
+  width:6px;
+  height:6px;
   border-radius:50%;
   background:var(--brand2);
-  box-shadow:0 0 10px var(--brand2);
+  box-shadow:0 0 6px var(--brand2);
 }
 
 .account-sidebar-usage{
-  font-size:11px;
+  font-size:10px;
   color:var(--muted);
   font-weight:500;
 }
@@ -950,20 +957,20 @@ textarea:focus{
   overflow-y:auto;
 }
 
-/* history pill (name-only chip style; overflow handled) */
+/* history pill: compact, utility feel */
 .account-sidebar-list li{
-  padding:7px 8px;
+  padding:6px 8px;
   border-radius:12px;
   background:#05070d;
   border:1px solid rgba(40,51,67,.95);
-  max-height:40px;
+  max-height:34px;
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
   display:flex;
   align-items:center;
   gap:6px;
-  box-shadow:0 10px 26px rgba(0,0,0,.7);
+  box-shadow:0 8px 18px rgba(0,0,0,.65);
   position:relative;
   cursor:pointer;
 }
@@ -972,9 +979,22 @@ textarea:focus{
   content:"↗";
   position:absolute;
   right:8px;
-  top:6px;
-  font-size:9px;
+  top:5px;
+  font-size:8px;
   color:rgba(148,163,253,.9);
+}
+
+/* New prompt in sidebar: smaller & neutral (not competing with primary CTAs) */
+.account-new-prompt-btn{
+  margin-top:6px;
+  padding:7px 11px;
+  font-size:10px;
+  border-radius:var(--radius-pill);
+  background:#05070a;
+  border:1px solid rgba(124,92,255,.5);
+  color:var(--brand2);
+  box-shadow:none;
+  align-self:flex-start;
 }
 
 /* Hide sidebar entirely on small screens */
@@ -1081,7 +1101,7 @@ textarea:focus{
   border-radius:16px;
   background:rgba(7,9,12,.98);
   border:1px solid var(--border);
-  box-shadow:0 18px 40px rgba(0,0,0,.65);
+  box-shadow:0 16px 32px rgba(0,0,0,.6);
   display:flex;
   flex-direction:column;
   gap:6px;
@@ -1093,9 +1113,9 @@ textarea:focus{
   position:absolute;
   inset:0;
   background:
-    radial-gradient(circle at top right, rgba(124,92,255,.16), transparent 60%),
-    radial-gradient(circle at bottom left, rgba(255,184,107,.14), transparent 70%);
-  opacity:.9;
+    radial-gradient(circle at top right, rgba(124,92,255,.12), transparent 60%),
+    radial-gradient(circle at bottom left, rgba(255,184,107,.10), transparent 70%);
+  opacity:.8;
   pointer-events:none;
 }
 
