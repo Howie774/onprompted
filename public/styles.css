@@ -222,17 +222,42 @@ main,header,footer{
   width:230px;
 }
 
+/* Clear “paste here” label above textarea */
+.input-label{
+  font-size:13px;
+  color:var(--accent-warm);
+  font-weight:600;
+  letter-spacing:.02em;
+}
+
+/* Main textarea — more readable & obviously interactive */
 textarea{
   flex:1;
   min-height:120px;
   max-height:40vh;
   resize:vertical;
-  background:transparent;
+  background:#05070a;
   color:var(--text);
-  border:none;
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:10px 11px;
   outline:none;
   font-size:16px;
   line-height:1.6;
+  font-weight:500;
+  box-shadow:0 10px 26px rgba(0,0,0,.8);
+  transition:border-color .16s ease, box-shadow .16s ease, background .16s ease;
+}
+
+textarea::placeholder{
+  color:var(--muted);
+  font-weight:600;
+}
+
+textarea:focus{
+  border-color:var(--brand2);
+  box-shadow:0 0 0 1px rgba(69,214,182,.16), 0 14px 32px rgba(0,0,0,.9);
+  background:#060910;
 }
 
 /* Steps copy next to button */
@@ -285,7 +310,7 @@ textarea{
   box-shadow:0 5px 14px rgba(0,0,0,.4);
 }
 
-/* ========== PRESETS ========== */
+/* ========== PRESETS (HTML removed; styles kept harmless) ========== */
 
 .preset-label{
   margin:2px 0 2px;
@@ -349,21 +374,31 @@ textarea{
   line-height:1.6;
 }
 
+/* Copy button — bigger & styled so it gets noticed */
 .btn-copy{
   cursor:pointer;
-  padding:7px 12px;
-  font-size:11px;
+  padding:10px 18px;
+  font-size:12px;
   border-radius:var(--radius-pill);
-  border:1px solid #2f3b4a;
-  background:#0b0d10;
-  color:#cfd9e3;
+  border:none;
+  background:linear-gradient(135deg,var(--brand),var(--brand2));
+  color:#050608;
   display:inline-flex;
   align-items:center;
-  gap:6px;
+  gap:8px;
   flex-shrink:0;
+  font-weight:600;
+  box-shadow:0 10px 26px rgba(124,92,255,.4);
+  transition:all .16s ease-out;
 }
 .btn-copy:hover{
-  background:#141921;
+  transform:translateY(-1px);
+  box-shadow:0 14px 32px rgba(0,0,0,.85);
+  opacity:.97;
+}
+.btn-copy:active{
+  transform:translateY(0);
+  box-shadow:0 8px 20px rgba(0,0,0,.8);
 }
 
 /* ========== CHAT / DEFAULT EXAMPLE ========== */

@@ -88,30 +88,21 @@
 
       <div class="input-block">
         <div class="input-left">
+          <div class="input-label">
+            Step 1 — <strong>Paste your messy prompt or idea directly into this box.</strong>
+            It’s the only place you need to type.
+          </div>
           <textarea
             id="idea"
-            placeholder="Paste your messy prompt or idea. Example: ‘Write a launch email for my new SaaS that helps students track deadlines.’"
+            placeholder="Paste your messy prompt or idea here. Example: “Write a launch email for my new SaaS that helps students track deadlines.”"
           ></textarea>
-
-          <div class="preset-label">Try a preset:</div>
-          <div class="chips" id="chips">
-            <button class="chip" data-example="Turn my 60s product footage into a 15s TikTok with 3 quick cuts.">
-              Video short from long clip
-            </button>
-            <button class="chip" data-example="Refactor my React Native cart to remove a dependency and keep styles the same.">
-              Refactor React Native cart
-            </button>
-            <button class="chip" data-example="I need a 7-day study plan for orgo, 2h/day, aiming for a B+.">
-              Study plan in 7 days
-            </button>
-          </div>
         </div>
 
         <div class="input-right">
           <div class="steps">
-            <div class="step">Step 1. Paste idea</div>
-            <div class="step">Step 2. Click Begin</div>
-            <div class="step">Step 3. Copy optimized prompt</div>
+            <div class="step">Step 1. Paste your idea</div>
+            <div class="step">Step 2. Click “Optimize prompt”</div>
+            <div class="step">Step 3. Copy & run it in your AI</div>
           </div>
           <button id="begin" class="btn-primary">Optimize prompt</button>
         </div>
@@ -121,7 +112,9 @@
       <section class="panel">
         <div class="panel-header">
           <h3>OPTIMIZED PROMPT OUTPUT</h3>
-          <button id="copyPrompt" class="btn-copy" type="button">Copy prompt</button>
+          <button id="copyPrompt" class="btn-copy" type="button">
+            Copy optimized prompt
+          </button>
         </div>
         <p class="panel-subcopy">
           OnPrompted will return a fully structured, model-ready prompt with clear goals,
@@ -307,8 +300,7 @@
       <p id="pricingMessage" class="pricing-line" style="display:none;"></p>
     </section>
 
-    <!-- ACCOUNT & HISTORY SIDEBAR (populated when logged in)
-         Layout is adjusted via styles.css + body.sidebar-active so it never overlaps main content -->
+    <!-- ACCOUNT & HISTORY SIDEBAR -->
     <aside id="accountSidebar" class="account-sidebar" style="display:none;">
       <div class="account-sidebar-header">
         <div class="account-sidebar-label">Account</div>
@@ -317,7 +309,7 @@
           <span id="accountSidebarPlan" class="account-sidebar-plan"></span>
           <span id="accountSidebarUsage" class="account-sidebar-usage"></span>
         </div>
-        <!-- "New prompt" button is injected here by app.js (ensureNewPromptButton) -->
+        <!-- "New prompt" button is injected here by app.js -->
       </div>
       <div class="account-sidebar-section">
         <div class="account-sidebar-label">Recent optimized prompts</div>

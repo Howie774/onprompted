@@ -99,13 +99,17 @@ function startNewPromptSession() {
 
 /* ========== UI Helpers ========== */
 
-document.getElementById('chips').addEventListener('click', (e) => {
-  const ex = e.target.closest('.chip')?.dataset.example;
-  if (!ex) return;
-  ideaEl.value = ex;
-  autoResizeIdea();
-  ideaEl.focus();
-});
+/* Safely attach preset handler only if #chips exists (it doesn’t now, so no error) */
+const chipsContainer = document.getElementById('chips');
+if (chipsContainer) {
+  chipsContainer.addEventListener('click', (e) => {
+    const ex = e.target.closest('.chip')?.dataset.example;
+    if (!ex) return;
+    ideaEl.value = ex;
+    autoResizeIdea();
+    ideaEl.focus();
+  });
+}
 
 function addBubble(html, who = 'ai') {
   if (!chat) return null;
@@ -677,7 +681,7 @@ function setAnswerMode(on) {
     ideaEl.placeholder = 'Type your answers to the questions above…';
   } else {
     ideaEl.placeholder =
-      "Paste your messy prompt or idea. Example: ‘Write a launch email for my new SaaS that helps students track deadlines.’";
+      "Paste your messy prompt or idea here. Example: ‘Write a launch email for my new SaaS that helps students track deadlines.’";
   }
 
   autoResizeIdea();
@@ -705,7 +709,7 @@ autoResizeIdea();
 beginBtn.addEventListener('click', async () => {
   const text = ideaEl.value.trim();
   if (!text) {
-    addBubble('Please type something first 🙂');
+    addBubble('Please paste your idea into the big box above first 🙂');
     ideaEl.focus();
     return;
   }
@@ -913,7 +917,7 @@ if (copyBtn) {
       await navigator.clipboard.writeText(textToCopy);
       copyBtn.textContent = 'Copied';
       setTimeout(() => {
-        copyBtn.textContent = 'Copy prompt';
+        copyBtn.textContent = 'Copy optimized prompt';
       }, 1500);
     } catch (err) {
       console.error('[CLIPBOARD] Error:', err);
