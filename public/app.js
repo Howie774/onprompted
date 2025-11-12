@@ -1,3 +1,4 @@
+// app.js
 const ideaEl = document.getElementById('idea');
 const beginBtn = document.getElementById('begin');
 const chat = document.getElementById('chat');
@@ -200,6 +201,43 @@ function hidePlanUi() {
   if (accountSidebarUsage) accountSidebarUsage.textContent = '';
 }
 
+/* ===== NEW: Flip pricing buttons to "Manage billing" if user already has a sub ===== */
+function applySubscriptionUi(hasActiveSub) {
+  // Toggle header Manage Billing button
+  if (manageBillingBtn) {
+    manageBillingBtn.style.display = hasActiveSub ? 'inline-flex' : 'none';
+  }
+
+  // Change/restore behavior of pricing grid buttons
+  const upgradeBtns = document.querySelectorAll('.plan-upgrade-btn');
+  upgradeBtns.forEach((btn) => {
+    if (hasActiveSub) {
+      // Make them all "Manage billing"
+      btn.textContent = 'Manage billing';
+      btn.dataset.plan = ''; // neutralize the existing click handler below
+      btn.onclick = (e) => {
+        e.preventDefault();
+        openBillingPortal();
+      };
+      btn.classList.add('is-managed'); // optional styling hook
+    } else {
+      // Restore default upgrade behavior
+      const plan = btn.getAttribute('data-plan');
+      if (plan) {
+        btn.textContent = `Upgrade to ${plan.charAt(0).toUpperCase()}${plan.slice(1)}`;
+      }
+      btn.onclick = () => {
+        if (!currentUser || !currentIdToken) {
+          openAuthModal();
+          return;
+        }
+        startCheckout(plan);
+      };
+      btn.classList.remove('is-managed');
+    }
+  });
+}
+
 function applyPlanUi({ plan, used, limit }) {
   const safeLimit =
     typeof limit === 'number' && limit > 0
@@ -239,6 +277,8 @@ async function fetchAndRenderUserPlan(uid) {
         used: 0,
         limit: CLIENT_PLAN_LIMITS.free,
       });
+      // No subscription in this case
+      applySubscriptionUi(false);
       return;
     }
 
@@ -259,6 +299,10 @@ async function fetchAndRenderUserPlan(uid) {
       CLIENT_PLAN_LIMITS.free;
 
     applyPlanUi({ plan, used, limit });
+
+    // NEW: detect if user has an active-ish subscription (based on stored id)
+    const hasActiveSub = !!data.stripeSubscriptionId;
+    applySubscriptionUi(hasActiveSub);
   } catch (err) {
     console.error('[ACCOUNT] Failed to load plan/usage:', err);
   }
@@ -645,6 +689,9 @@ window.firebaseAuth.onAuthStateChanged(async (user) => {
     setSidebarVisibility(false);
     promptHistory = [];
     activePromptId = null;
+
+    // NEW: ensure pricing buttons revert to upgrade state when logged out
+    applySubscriptionUi(false);
 
     console.log('[AUTH] No user logged in');
   }
@@ -1130,8 +1177,7 @@ planUpgradeButtons.forEach((btn) => {
       '[CHECKOUT] Upgrade button clicked:',
       plan
     );
-    if (!plan) return;
-
+    if (!plan) return; // NOTE: applySubscriptionUi() clears data-plan to disable this path
     if (!currentUser || !currentIdToken) {
       console.warn(
         '[CHECKOUT] No user/token on upgrade click -> auth modal'

@@ -327,6 +327,45 @@ app.post(
         );
       }
 
+      /* ---- Guard: prevent multiple concurrent subscriptions ---- */
+      let hasActiveSub = false;
+      try {
+        // Prefer stored subscription id if present
+        const userSnapLatest = await db.collection('users').doc(firebaseUid).get();
+        const userDataLatest = userSnapLatest.exists ? userSnapLatest.data() || {} : {};
+        const savedSubId = userDataLatest.stripeSubscriptionId || null;
+
+        if (savedSubId) {
+          const savedSub = await stripe.subscriptions.retrieve(savedSubId);
+          const s = savedSub.status; // 'active','trialing','past_due','unpaid','paused','canceled'
+          if (['active', 'trialing', 'past_due', 'unpaid', 'paused'].includes(s)) {
+            hasActiveSub = true;
+          }
+        } else {
+          // Fallback: look for any other active-ish subscription on the customer
+          const subs = await stripe.subscriptions.list({
+            customer: stripeCustomerId,
+            status: 'all',
+            expand: ['data.default_payment_method'],
+            limit: 10,
+          });
+          hasActiveSub = subs.data.some((sub) =>
+            ['active', 'trialing', 'past_due', 'unpaid', 'paused'].includes(sub.status)
+          );
+        }
+      } catch (e) {
+        console.warn('[CHECKOUT][API] Subscription check failed (continuing safely):', e?.message);
+      }
+
+      if (hasActiveSub) {
+        return res.status(409).json({
+          error: 'already_subscribed',
+          message:
+            'You already have an active subscription. Use the billing portal to manage or change your plan.',
+        });
+      }
+      /* ---- End guard ---- */
+
       const session = await stripe.checkout.sessions.create({
         mode: 'subscription',
         customer: stripeCustomerId,
